@@ -5,8 +5,8 @@ AnalogIn pot(A3);
 DigitDisplay display(A0, A1);
 
 int main() {
-  float ain;
-  display.on();
+	float ain;
+	display.on();
 	while(1) {
 		ain = pot.read();
 		unsigned short val = floor(ain * 100);
