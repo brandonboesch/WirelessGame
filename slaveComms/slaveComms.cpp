@@ -14,17 +14,16 @@
 #define MESSAGE_WAIT_TIMEOUT (30.0)
 
 // ******************** GLOBALS *************************************
-NetworkInterface *NetworkIf;                 // interface used to create a UDP socket
-Ticker Ticker1;                              // for LED blinking
+NetworkInterface *NetworkIf;                // interface used to create a UDP socket
+Ticker Ticker1;                             // for LED blinking
 DigitalOut LED_1(MBED_CONF_APP_LED, 1);
-DigitalOut Output(D3, 1);
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
-EventQueue Queue1;                           // queue for sending messages from button press.
+EventQueue Queue1;                          // queue for sending messages from button press.
 Timeout MessageTimeout;
 
 uint8_t MultiCastAddr[16] = {0};
-static const int16_t MulticastHops = 10;     // # of hops the multicast message can go
+static const int16_t MulticastHops = 10;    // # of hops the multicast message can go
 bool ButtonStatus = 0;
 static const char BufferOn[2] = {'o','n'};
 static const char BufferOff[3] = {'o','f','f'};
@@ -139,12 +138,10 @@ static void send_message() {
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
   if(ButtonStatus) {
     LED_1 = 0;
-    Output = 0;
     MySocket->sendto(send_sockAddr, BufferOn, 2);
   }
   else {
     LED_1 = 1;
-    Output = 1;
     MySocket->sendto(send_sockAddr, BufferOff, 3);
   }
 }
@@ -174,13 +171,11 @@ static void receive() {
         tr_debug("Turning led on\n");
         LED_1 = 0;
         ButtonStatus=1;
-        Output = 0;
       }
       if(strcmp((char*)ReceiveBuffer, "off") == 0){
         tr_debug("Turning led off\n");
         LED_1 = 1;
         ButtonStatus=0;
-        Output = 1;
       }
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
