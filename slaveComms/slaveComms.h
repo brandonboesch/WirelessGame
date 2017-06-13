@@ -6,4 +6,10 @@
 void start_slave(NetworkInterface *interface);
 void start_blinking();
 void cancel_blinking();   
-static void blink(); 
+static void blink();
+static void init_socket();
+static void myButton_isr();
+static void send_message();
+static void handle_socket();
+static void receive();
+static void messageTimeoutCallback();
