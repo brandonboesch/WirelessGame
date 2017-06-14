@@ -15,12 +15,11 @@
 
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
-Ticker Ticker1;                             // for LED blinking
-DigitalOut LED_1(MBED_CONF_APP_LED, 1);
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
-EventQueue Queue1;                          // queue for sending messages from button press.
+EventQueue Queue1;                          // queue for sending messages from button press
 Timeout MessageTimeout;
+DigitalOut LED(MBED_CONF_APP_LED, 1);     // onboard LED
 
 uint8_t MultiCastAddr[16] = {0};
 static const int16_t MulticastHops = 10;    // # of hops the multicast message can go
@@ -28,7 +27,6 @@ bool ButtonStatus = 0;
 static const char BufferOn[2] = {'o','n'};
 static const char BufferOff[3] = {'o','f','f'};
 uint8_t ReceiveBuffer[5];
-
 // ******************************************************************
 
 
@@ -44,37 +42,6 @@ void start_slave(NetworkInterface *interface){
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   init_socket();
-}
-
-
-// ******** start_blinking()() **************************************
-// about:  Creates a thread every second which blinks the status LED
-// input:  none
-// output: none
-// ******************************************************************
-void start_blinking(){
-  Ticker1.attach(blink, 1.0);
-}
-
-
-// ******** cancel_blinking()() *************************************
-// about:  kill blinking led thread
-// input:  none
-// output: none
-// ******************************************************************
-void cancel_blinking(){
-  Ticker1.detach();
-  LED_1=1;
-}
-
-
-// ******** blink() ************************************************
-// about:  flip the status of the LED 
-// input:  none
-// output: none
-// *****************************************************************
-static void blink(){
-  LED_1 = !LED_1;
 }
 
 
@@ -137,11 +104,11 @@ static void send_message() {
   tr_debug("send msg %d", ButtonStatus);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
   if(ButtonStatus) {
-    LED_1 = 0;
+    LED = 0;
     MySocket->sendto(send_sockAddr, BufferOn, 2);
   }
   else {
-    LED_1 = 1;
+    LED = 1;
     MySocket->sendto(send_sockAddr, BufferOff, 3);
   }
 }
@@ -169,12 +136,12 @@ static void receive() {
       // Handle command - "on", "off"
       if(strcmp((char*)ReceiveBuffer, "on") == 0){
         tr_debug("Turning led on\n");
-        LED_1 = 0;
+        LED = 0;
         ButtonStatus=1;
       }
       if(strcmp((char*)ReceiveBuffer, "off") == 0){
         tr_debug("Turning led off\n");
-        LED_1 = 1;
+        LED = 1;
         ButtonStatus=0;
       }
     }

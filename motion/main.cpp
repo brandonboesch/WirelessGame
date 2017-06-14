@@ -15,9 +15,7 @@ int main(){
     Data values = device.get_values();
         
     // print each struct member over serial
-    printf("ax = %f ay = %f az = %f | mx = %f my = %f mz = %f\n\r"
-           ,values.ax, values.ay, values.az
-           ,values.mx, values.my, values.mz);
+    printf("ax = %f ay = %f az = %f \n\r",values.ax, values.ay, values.az);
     wait(1);
   }
 }

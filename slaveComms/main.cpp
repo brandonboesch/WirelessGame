@@ -19,10 +19,6 @@
 #include "mbed-trace/mbed_trace.h"
 #include "slaveComms.h"
 
-void trace_printer(const char* str) {
-    printf("%s\n", str);
-}
-
 #define ATMEL   1
 #define MCR20   2
 #define NCS36510 3
@@ -31,6 +27,16 @@ void trace_printer(const char* str) {
 #define MESH_LOWPAN     3
 #define MESH_THREAD     4
 
+
+// ****************** PROTOTYPES ************************************
+void trace_printer(const char* str);
+void start_blinking();
+void cancel_blinking();
+static void blink();
+// ******************************************************************
+
+
+// ******************** GLOBALS *************************************
 #if MBED_CONF_APP_RADIO_TYPE == ATMEL
 #include "NanostackRfPhyAtmel.h"
 NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
@@ -50,33 +56,86 @@ LoWPANNDInterface mesh;
 ThreadInterface mesh;
 #endif //MBED_CONF_APP_MESH_TYPE
 
-int main()
-{
-	mbed_trace_init();
-    mbed_trace_print_function_set(trace_printer);
+Ticker Ticker1;                             // for LED blinking
+DigitalOut LED_1(MBED_CONF_APP_LED, 1);     // onboard LED
+// ******************************************************************
 
-    if (MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC) {
-        start_blinking();
-    }
-    else {
-        printf("pins not configured correctly");
-    }
 
-    printf("\n\nConnecting...\n");
-    mesh.initialize(&rf_phy);
-    int error=-1;
-    if ((error=mesh.connect())) {
-        printf("Connection failed! %d\n", error);
-        return error;
-    }
+// ****************** FUNCTIONS *************************************
 
-    while (NULL == mesh.get_ip_address())
-        Thread::wait(500);
+// ******** trace_printer() *****************************************
+// about:  Function that calls printf
+// input:  *str - pointer to string that will be printed
+// output: none
+// ******************************************************************
 
-    printf("connected. IP = %s\n", mesh.get_ip_address());
+void trace_printer(const char* str){
+  printf("%s\n", str);
+}
 
-    if (MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC) {
-        cancel_blinking();
-        start_slave((NetworkInterface *)&mesh); 
-    }
+
+// ******** start_blinking() **************************************
+// about:  Creates a thread every second which blinks the status LED
+// input:  none
+// output: none
+// ******************************************************************
+void start_blinking(){
+  Ticker1.attach(blink, 1.0);
+}
+
+
+// ******** cancel_blinking() *************************************
+// about:  kill blinking led thread
+// input:  none
+// output: none
+// ******************************************************************
+void cancel_blinking(){
+  Ticker1.detach();
+  LED_1=1;
+}
+
+
+// ******** blink() ************************************************
+// about:  flip the status of the LED 
+// input:  none
+// output: none
+// *****************************************************************
+static void blink(){
+  LED_1 = !LED_1;
+}
+
+
+// ******** main() ************************************************
+// about:  Initialize target to IP address and kick off comms application 
+// input:  none
+// output: none
+// *****************************************************************
+int main(){
+  mbed_trace_init();
+  mbed_trace_print_function_set(trace_printer);
+
+  if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
+    start_blinking();
+  }
+  else{
+    printf("pins not configured correctly");
+  }
+
+  printf("\n\nConnecting...\n");
+  mesh.initialize(&rf_phy);
+  int error=-1;
+  if((error=mesh.connect())){
+    printf("Connection failed! %d\n", error);
+    return error;
+  }
+
+  while(NULL == mesh.get_ip_address()){
+    Thread::wait(500);
+  }
+  printf("connected. IP = %s\n", mesh.get_ip_address());
+
+  if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
+    cancel_blinking();
+    start_slave((NetworkInterface *)&mesh); 
+  }
 }
