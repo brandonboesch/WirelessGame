@@ -26,6 +26,7 @@ static const int16_t MulticastHops = 10;         // # of hops multicast messages
 bool ButtonStatus = 0;                           
 static const char BufferOn[2] = {'o','n'};       // string transmitted when LED is on 
 static const char BufferOff[3] = {'o','f','f'};  // string transmitted when LED is off
+static const char CallbackBuff[8] = {'c','a','l','l','b','a','c','k'};
 uint8_t ReceiveBuffer[BUFF_SIZE];                // buffer that holds transmissions
 // ******************************************************************
 
@@ -57,7 +58,7 @@ void start_master(NetworkInterface *interface){
 }
 
 
-// ******** MyButton_isr()****************************************
+// ******** myButton_isr()****************************************
 // about:  Interrupt service routine for button presses. 
 //         Note, isr must be quick (no printing or network functions 
 //         directly called from isr).
@@ -66,6 +67,9 @@ void start_master(NetworkInterface *interface){
 // ***************************************************************
 static void myButton_isr() {
   ButtonStatus = !ButtonStatus;
+  if (ButtonStatus) Queue1.call(send_message, BufferOn);
+  else              Queue1.call(send_message, BufferOff);
+
 }
 
 
@@ -85,7 +89,7 @@ static void socket_isr(){
 // output: none
 // ***************************************************************
 static void messageTimeoutCallback(){
-  send_message();
+  send_message(CallbackBuff);
 }
 
 
@@ -94,10 +98,10 @@ static void messageTimeoutCallback(){
 // input:  none
 // output: none
 // ***************************************************************
-static void send_message() {
-  tr_debug("sending message: %d", BufferOn);
+static void send_message(const char messageBuff[BUFF_SIZE]) {
+  tr_debug("sending message: %s", messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
-  MySocket->sendto(send_sockAddr, BufferOn, 2);
+  MySocket->sendto(send_sockAddr, messageBuff, 2);
 }
 
 
@@ -120,7 +124,6 @@ static void receive() {
       tr_debug("Advertisiment after %d seconds", timeout_value);
       MessageTimeout.detach();
       MessageTimeout.attach(&messageTimeoutCallback, timeout_value);
-      // Handle command - "on", "off"
 
       printf("%s\n", ReceiveBuffer);
     }
