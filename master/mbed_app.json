@@ -1,6 +1,6 @@
 {
     "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_config.h\"",
-               "BUFF_SIZE=8"],
+               "BUFF_SIZE=16"],
     "config": {
         "radio-type":{
             "help": "options are ATMEL, MCR20, NCS36510, KW24D",
