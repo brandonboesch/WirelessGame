@@ -21,7 +21,7 @@
 #include "rtos.h"
 #include "NanostackInterface.h"
 #include "mbed-trace/mbed_trace.h"
-#include "masterComms.h"
+#include "master.h"
 
 #define ATMEL   1
 #define MCR20   2

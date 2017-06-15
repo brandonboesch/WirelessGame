@@ -21,7 +21,7 @@
 #include "rtos.h"
 #include "NanostackInterface.h"
 #include "mbed-trace/mbed_trace.h"
-#include "slaveComms.h"
+#include "slave.h"
 
 #define ATMEL   1
 #define MCR20   2
@@ -140,6 +140,6 @@ int main(){
 
   if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
     cancel_blinking();
-    start_slave((NetworkInterface *)&mesh); 
+    slave_init((NetworkInterface *)&mesh); 
   }
 }

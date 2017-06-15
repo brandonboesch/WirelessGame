@@ -1,4 +1,4 @@
-// Filename: masterComms.h
+// Filename: master.h
 // Built by: Brandon Boesch
 // Date    : June 12th, 2017
 
