@@ -8,13 +8,14 @@
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
 #include "FXOS8700CQ.h"
+#include <math.h>
 
 #define TRACE_GROUP "Slave"
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define MESSAGE_WAIT_TIMEOUT (30.0)
 #define DATA_ARRAY_SIZE 20
-#define DATA_COLLECT_RATE 0.001
+#define DATA_COLLECT_RATE 0.01
 
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
@@ -100,16 +101,19 @@ static void send_message(const char messageBuff[COMM_BUFF_SIZE]) {
 static void calcDataValues(){
   Data valueAvg = {0};                               // holds average of values in array
   for(uint8_t i = 0; i < DATA_ARRAY_SIZE; i++){      // calculate average
-    valueAvg.ax += valueArray[i].ax;
-    valueAvg.ay += valueArray[i].ay;
-    valueAvg.az += valueArray[i].az; 
+    //valueAvg.ax += valueArray[i].ax;               // x value added
+    valueAvg.ay += valueArray[i].ay;                 // y value added
+    valueAvg.az += valueArray[i].az;                 // z value added
   }
-  valueAvg.ax = valueAvg.ax/DATA_ARRAY_SIZE;
-  valueAvg.ay = valueAvg.ay/DATA_ARRAY_SIZE;
-  valueAvg.az = valueAvg.az/DATA_ARRAY_SIZE;
+  //valueAvg.ax = valueAvg.ax/DATA_ARRAY_SIZE;       // x value averaged
+  valueAvg.ay = valueAvg.ay/DATA_ARRAY_SIZE;         // y value averaged
+  valueAvg.az = valueAvg.az/DATA_ARRAY_SIZE;         // z value averaged
+
+  float angle = atan2(valueAvg.az,valueAvg.ay);      // calculate from cartesian to polar
   
-  char buffer[COMM_BUFF_SIZE];                             // string to hold average
-  snprintf(buffer, sizeof buffer, "x = %.2f | y = %.2f | z = %.2f", valueAvg.ax, valueAvg.ay, valueAvg.az);    // load the string
+  char buffer[COMM_BUFF_SIZE];                       // string to hold average
+  snprintf(buffer, sizeof buffer, "angle = %.2f", angle);  // load the string
+
   send_message(buffer);                                    // broadcast averaged data
 
   TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE); // turn measuring isr back on
@@ -161,7 +165,7 @@ static void receive() {
 // output: none
 // ***************************************************************
 static void myButton_isr() {
-  Queue1.call(send_message, "button press");
+  Queue1.call(send_message, "button");
 }
 
 
