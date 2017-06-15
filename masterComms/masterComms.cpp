@@ -1,4 +1,4 @@
-// Filename: slaveComms.cpp
+// Filename: masterComms.cpp
 // Built by: Brandon Boesch
 // Date    : June 12th, 2017
 
@@ -12,22 +12,17 @@
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define MESSAGE_WAIT_TIMEOUT (30.0)
-#define BUFF_SIZE 10
+
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
 Timeout MessageTimeout;
-DigitalOut LED(MBED_CONF_APP_LED, 1);       // onboard LED
 
 uint8_t MultiCastAddr[16] = {0};
-static const int16_t MulticastHops = 10;         // # of hops multicast messages can go
-bool ButtonStatus = 0;                           
-static const char BufferOn[2] = {'o','n'};       // string transmitted when LED is on 
-static const char BufferOff[3] = {'o','f','f'};  // string transmitted when LED is off
-static const char CallbackBuff[8] = {'c','a','l','l','b','a','c','k'};
-uint8_t ReceiveBuffer[BUFF_SIZE];                // buffer that holds transmissions
+static const int16_t MulticastHops = 10;    // # of hops multicast messages can go                    
+uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
 // ******************************************************************
 
 
@@ -66,10 +61,7 @@ void start_master(NetworkInterface *interface){
 // output: none
 // ***************************************************************
 static void myButton_isr() {
-  ButtonStatus = !ButtonStatus;
-  if (ButtonStatus) Queue1.call(send_message, BufferOn);
-  else              Queue1.call(send_message, BufferOff);
-
+  Queue1.call(send_message, "button press");
 }
 
 
@@ -84,12 +76,12 @@ static void socket_isr(){
 
 
 // ******** messageTimeoutCallback()***************************************
-// about:  Sends a message in case of timeout
+// about:  Broadcasts a message in case of timeout
 // input:  none
 // output: none
 // ***************************************************************
 static void messageTimeoutCallback(){
-  send_message(CallbackBuff);
+  send_message("callback");
 }
 
 
@@ -101,7 +93,7 @@ static void messageTimeoutCallback(){
 static void send_message(const char messageBuff[BUFF_SIZE]) {
   tr_debug("sending message: %s", messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
-  MySocket->sendto(send_sockAddr, messageBuff, 2);
+  MySocket->sendto(send_sockAddr, messageBuff, BUFF_SIZE);
 }
 
 
@@ -125,7 +117,7 @@ static void receive() {
       MessageTimeout.detach();
       MessageTimeout.attach(&messageTimeoutCallback, timeout_value);
 
-      printf("%s\n", ReceiveBuffer);
+      printf("Receiving message: %s\n", ReceiveBuffer);
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);

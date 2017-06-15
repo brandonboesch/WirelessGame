@@ -2,7 +2,6 @@
 // Built by: Brandon Boesch
 // Date    : June 12th, 2017
 
-#define BUFF_SIZE
 
 void start_master(NetworkInterface *interface);
 static void myButton_isr();
