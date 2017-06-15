@@ -140,6 +140,6 @@ int main(){
 
   if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
     cancel_blinking();
-    start_master((NetworkInterface *)&mesh); 
+    master_init((NetworkInterface *)&mesh); 
   }
 }

@@ -28,13 +28,14 @@ uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
 
 // ****************** FUNCTIONS *************************************
 
-// ******** start_master() *****************************************
-// about:  Initializes a new socket using UDP and dispatches to queue
+// ******** master_init() *******************************************
+// about:  Initializes a new socket using UDP, configures button interrupts, 
+//         and dispatches the queue.
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
-void start_master(NetworkInterface *interface){
-  tr_debug("begin start_master()\n");           
+void master_init(NetworkInterface *interface){
+  tr_debug("begin master_init()\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   MySocket = new UDPSocket(NetworkIf);
@@ -49,33 +50,12 @@ void start_master(NetworkInterface *interface){
 
   //if something happens in socket (packets in or out), the call-back is called.
   MySocket->sigio(callback(socket_isr));
-  Queue1.dispatch();                           // dispatch forever
-}
+
+  // dispatch forever
+  Queue1.dispatch();                           }
 
 
-// ******** myButton_isr()****************************************
-// about:  Interrupt service routine for button presses. 
-//         Note, isr must be quick (no printing or network functions 
-//         directly called from isr).
-// input:  none
-// output: none
-// ***************************************************************
-static void myButton_isr() {
-  Queue1.call(send_message, "button press");
-}
-
-
-// ******** socket_isr()***************************************
-// about:  Handler for socket for when packets come in or out
-// input:  none
-// output: none
-// ***************************************************************
-static void socket_isr(){
-  Queue1.call(receive);  // call-back might come from ISR
-}
-
-
-// ******** messageTimeoutCallback()***************************************
+// ******** messageTimeoutCallback()******************************
 // about:  Broadcasts a message in case of timeout
 // input:  none
 // output: none
@@ -87,7 +67,7 @@ static void messageTimeoutCallback(){
 
 // ******** send_message()****************************************
 // about:  Broadcast a message to all connected devices
-// input:  none
+// input:  messageBuff - string of message you wish to broadcast
 // output: none
 // ***************************************************************
 static void send_message(const char messageBuff[BUFF_SIZE]) {
@@ -129,3 +109,31 @@ static void receive() {
     }  
   }
 }
+// ***************************************************************
+
+
+// ****************** ISR HANDLERS *******************************
+
+// ******** myButton_isr()****************************************
+// about:  Handler for button presses. 
+//         Note, isr must be quick (no printing or network functions 
+//         directly called from isr).
+// input:  none
+// output: none
+// ***************************************************************
+static void myButton_isr() {
+  Queue1.call(send_message, "button press");
+}
+
+
+// ******** socket_isr()******************************************
+// about:  Handler for socket for when packets come in or out.
+//         Note, isr must be quick (no printing or network functions 
+//         directly called from isr).
+// input:  none
+// output: none
+// ***************************************************************
+static void socket_isr(){
+  Queue1.call(receive);  // call-back might come from ISR
+}
+
