@@ -12,28 +12,28 @@
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define MESSAGE_WAIT_TIMEOUT (30.0)
-
+#define BUFF_SIZE 10
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
 Timeout MessageTimeout;
-DigitalOut LED(MBED_CONF_APP_LED, 1);     // onboard LED
+DigitalOut LED(MBED_CONF_APP_LED, 1);       // onboard LED
 
 uint8_t MultiCastAddr[16] = {0};
-static const int16_t MulticastHops = 10;    // # of hops the multicast message can go
-bool ButtonStatus = 0;
-static const char BufferOn[2] = {'o','n'};
-static const char BufferOff[3] = {'o','f','f'};
-uint8_t ReceiveBuffer[5];
+static const int16_t MulticastHops = 10;         // # of hops multicast messages can go
+bool ButtonStatus = 0;                           
+static const char BufferOn[2] = {'o','n'};       // string transmitted when LED is on 
+static const char BufferOff[3] = {'o','f','f'};  // string transmitted when LED is off
+uint8_t ReceiveBuffer[BUFF_SIZE];                // buffer that holds transmissions
 // ******************************************************************
 
 
 // ****************** FUNCTIONS *************************************
 
 // ******** start_master() *****************************************
-// about:  Initializes a new socket using UDP
+// about:  Initializes a new socket using UDP and dispatches to queue
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
@@ -41,46 +41,40 @@ void start_master(NetworkInterface *interface){
   tr_debug("begin start_master()\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
-  init_socket();
-}
-
-
-// ******** init_socket() ******************************************
-// about:  initializes a new socket using UDP
-// input:  none
-// output: none
-// *****************************************************************
-static void init_socket(){
   MySocket = new UDPSocket(NetworkIf);
   MySocket->set_blocking(false);
   MySocket->bind(UDP_PORT);  
   MySocket->setsockopt(SOCKET_IPPROTO_IPV6, SOCKET_IPV6_MULTICAST_HOPS, &MulticastHops, sizeof(MulticastHops));
+ 
+  // configure button interrupt
   if(MBED_CONF_APP_BUTTON != NC){
   	MyButton.fall(&myButton_isr);
   }
+
   //if something happens in socket (packets in or out), the call-back is called.
-  MySocket->sigio(callback(handle_socket));
+  MySocket->sigio(callback(socket_isr));
   Queue1.dispatch();                           // dispatch forever
 }
 
 
 // ******** MyButton_isr()****************************************
-// about:  We cannot use printing or network functions directly from isr.
+// about:  Interrupt service routine for button presses. 
+//         Note, isr must be quick (no printing or network functions 
+//         directly called from isr).
 // input:  none
 // output: none
 // ***************************************************************
 static void myButton_isr() {
   ButtonStatus = !ButtonStatus;
-  Queue1.call(send_message);
 }
 
 
-// ******** handle_socket()***************************************
+// ******** socket_isr()***************************************
 // about:  Handler for socket for when packets come in or out
 // input:  none
 // output: none
 // ***************************************************************
-static void handle_socket(){
+static void socket_isr(){
   Queue1.call(receive);  // call-back might come from ISR
 }
 
@@ -101,16 +95,9 @@ static void messageTimeoutCallback(){
 // output: none
 // ***************************************************************
 static void send_message() {
-  tr_debug("send msg %d", ButtonStatus);
+  tr_debug("sending message: %d", BufferOn);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
-  if(ButtonStatus) {
-    LED = 0;
-    MySocket->sendto(send_sockAddr, BufferOn, 2);
-  }
-  else {
-    LED = 1;
-    MySocket->sendto(send_sockAddr, BufferOff, 3);
-  }
+  MySocket->sendto(send_sockAddr, BufferOn, 2);
 }
 
 
@@ -134,16 +121,8 @@ static void receive() {
       MessageTimeout.detach();
       MessageTimeout.attach(&messageTimeoutCallback, timeout_value);
       // Handle command - "on", "off"
-      if(strcmp((char*)ReceiveBuffer, "on") == 0){
-        tr_debug("Turning led on\n");
-        LED = 0;
-        ButtonStatus=1;
-      }
-      if(strcmp((char*)ReceiveBuffer, "off") == 0){
-        tr_debug("Turning led off\n");
-        LED = 1;
-        ButtonStatus=0;
-      }
+
+      printf("%s\n", ReceiveBuffer);
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);

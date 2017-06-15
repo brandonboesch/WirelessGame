@@ -33,7 +33,7 @@ uint8_t ReceiveBuffer[5];
 // ****************** FUNCTIONS *************************************
 
 // ******** start_slave()() *****************************************
-// about:  Initializes a new socket using UDP
+// about:  Initializes a new socket using UDP and dispatches to queue
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
@@ -41,16 +41,6 @@ void start_slave(NetworkInterface *interface){
   tr_debug("testing start_slave()\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
-  init_socket();
-}
-
-
-// ******** init_socket() ******************************************
-// about:  initializes a new socket using UDP
-// input:  none
-// output: none
-// *****************************************************************
-static void init_socket(){
   MySocket = new UDPSocket(NetworkIf);
   MySocket->set_blocking(false);
   MySocket->bind(UDP_PORT);  
