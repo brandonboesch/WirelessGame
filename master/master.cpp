@@ -11,17 +11,15 @@
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
-#define MESSAGE_WAIT_TIMEOUT (30.0)
 
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
-Timeout MessageTimeout;
 
 uint8_t MultiCastAddr[16] = {0};
-static const int16_t MulticastHops = 10;    // # of hops multicast messages can go                    
+static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
 // ******************************************************************
 
@@ -34,8 +32,8 @@ uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
-void master_init(NetworkInterface *interface){
-  tr_debug("begin master_init()\n");           
+void masterInit(NetworkInterface *interface){
+  printf("Initializing master device\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   MySocket = new UDPSocket(NetworkIf);
@@ -52,52 +50,36 @@ void master_init(NetworkInterface *interface){
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
-  Queue1.dispatch();                           }
-
-
-// ******** messageTimeoutCallback()******************************
-// about:  Broadcasts a message in case of timeout
-// input:  none
-// output: none
-// ***************************************************************
-static void messageTimeoutCallback(){
-  send_message("callback");
+  Queue1.dispatch();                           
 }
 
 
-// ******** send_message()****************************************
+// ******** sendMessage()****************************************
 // about:  Broadcast a message to all connected devices
 // input:  messageBuff - string of message you wish to broadcast
 // output: none
 // ***************************************************************
-static void send_message(const char messageBuff[BUFF_SIZE]) {
+void sendMessage(const char messageBuff[BUFF_SIZE]) {
   tr_debug("sending message: %s", messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
   MySocket->sendto(send_sockAddr, messageBuff, BUFF_SIZE);
 }
 
 
-// ******** receive()*********************************************
+// ******** receiveMessage()*********************************************
 // about:  Reads all data from the socket, and updates devices accordingly
 // input:  none
 // output: none
 // ***************************************************************
-static void receive() {
+void receiveMessage() {
   // Read data from the socket
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
   while(something_in_socket){
-    int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer) - 1);
+    int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
-      int timeout_value = MESSAGE_WAIT_TIMEOUT;
-      tr_debug("Packet from %s\n", source_addr.get_ip_address());
-      timeout_value += rand() % 30;
-      tr_debug("Advertisiment after %d seconds", timeout_value);
-      MessageTimeout.detach();
-      MessageTimeout.attach(&messageTimeoutCallback, timeout_value);
-
-      printf("Receiving message: %s\n", ReceiveBuffer);
+      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address(),ReceiveBuffer);
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
@@ -121,8 +103,8 @@ static void receive() {
 // input:  none
 // output: none
 // ***************************************************************
-static void myButton_isr() {
-  Queue1.call(send_message, "button press");
+void myButton_isr() {
+  Queue1.call(sendMessage, "button press");
 }
 
 
@@ -133,7 +115,7 @@ static void myButton_isr() {
 // input:  none
 // output: none
 // ***************************************************************
-static void socket_isr(){
-  Queue1.call(receive);  // call-back might come from ISR
+void socket_isr(){
+  Queue1.call(receiveMessage);  // call-back might come from ISR
 }
 
