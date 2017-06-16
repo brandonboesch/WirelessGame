@@ -4,7 +4,7 @@
     "config": {
         "radio-type":{
             "help": "options are ATMEL, MCR20, NCS36510, KW24D",
-            "value": "ATMEL"
+            "value": "KW24D"
         },
         "mesh-type":{
             "help": "options are MESH_LOWPAN, MESH_THREAD",
@@ -24,7 +24,7 @@
             "mbed-mesh-api.thread-master-key": "{0x10, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}",
             "mbed-mesh-api.thread-config-channel": 22,
             "mbed-mesh-api.thread-device-type": "MESH_DEVICE_TYPE_THREAD_ROUTER",
-            "mbed-mesh-api.heap-size": 30000,
+            "mbed-mesh-api.heap-size": 14000,
             "mbed-trace.enable": false,
             "platform.stdio-convert-newlines": true,
             "platform.stdio-baud-rate": 115200
