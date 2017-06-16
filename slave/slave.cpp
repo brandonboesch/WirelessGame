@@ -24,9 +24,9 @@ InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
 Timeout MessageTimeout;
 Ticker TickerAccel;                         // timer for measuring accelerometer data
-FXOS8700CQ device(I2C_SDA,I2C_SCL);         // create object and specifiy pins
+FXOS8700CQ device(I2C_SDA,I2C_SCL);         // accelerometer device
 
-uint8_t MultiCastAddr[16] = {0};
+uint8_t MultiCastAddr[16] = {0};            // address for multi device broadcasting
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can go       
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
@@ -56,7 +56,7 @@ void slaveInit(NetworkInterface *interface){
   device.init();                       
 
   // attach accelerometer measuring function to ticker
-  TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE);
+//  TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE);
  
   // configure button interrupt
   if(MBED_CONF_APP_BUTTON != NC){
@@ -72,8 +72,8 @@ void slaveInit(NetworkInterface *interface){
 
 
 // ******** calcAngle()******************************************
-// about:  Averages values in the date array, translates cartesian 
-//         coordinates to polar, and then sends as message.
+// about:  Averages values in the data array, translates cartesian 
+//         coordinates to polar, and then sends angle as message.
 // input:  none
 // output: none
 // ***************************************************************

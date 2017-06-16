@@ -6,6 +6,7 @@
 void masterInit(NetworkInterface *interface);
 void sendMessage(const char messageBuff[BUFF_SIZE]); 
 void receiveMessage();
+void pairSlaves();
 
 void socket_isr();
 void myButton_isr();

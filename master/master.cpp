@@ -18,11 +18,16 @@
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
-EventQueue Queue1;                          // queue for sending messages from button press
+EventQueue Queue1;                          // queue for sending messages
+SocketAddress Slave1_Addr = NULL;
+SocketAddress Slave2_Addr = NULL;
+SocketAddress Slave3_Addr = NULL;
+SocketAddress Slave4_Addr = NULL;
 
 uint8_t MultiCastAddr[16] = {0};
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
+bool Init_Mode = true;                      // determines wheter in init mode of game mode
 // ******************************************************************
 
 
@@ -84,6 +89,7 @@ void receiveMessage() {
     if (length > 0) {
       printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
     }
+
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
       something_in_socket=false;
@@ -94,6 +100,53 @@ void receiveMessage() {
     }  
   }
 }
+
+// ******** pairSlaves()******************************************
+// about:  Reads all data from the socket and pairs with slaves
+// input:  none
+// output: none
+// ***************************************************************
+void pairSlaves() {
+  // Read data from the socket
+  SocketAddress source_addr;
+  memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
+  bool something_in_socket = true;
+  // loop while data exists in buffer
+  while(something_in_socket){
+    int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
+    if (length > 0) {
+      if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
+        printf("Slave1 assigned\n");
+        Slave1_Addr = source_addr;
+      }
+      else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
+        printf("Slave2 assigned\n");
+        Slave2_Addr = source_addr;
+      }
+
+      else if(Slave3_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave4_Addr){
+        printf("Slave3 assigned\n");
+        Slave3_Addr = source_addr;
+      }
+      else if(Slave4_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave3_Addr){
+        printf("Slave4 assigned\n");
+        Slave4_Addr = source_addr;
+      }
+
+      printf("\nSlave1_Addr: %s\nSlave2_Addr: %s\nSlave3_Addr: %s\nSlave4_Addr: %s\n", Slave1_Addr.get_ip_address(), Slave2_Addr.get_ip_address(), Slave3_Addr.get_ip_address(), Slave4_Addr.get_ip_address());
+    }
+
+    else if(length!=NSAPI_ERROR_WOULD_BLOCK){
+      tr_error("Error happened when receiving %d\n", length);
+      something_in_socket=false;
+    }
+    else{
+      // there was nothing to read.
+      something_in_socket=false;
+    }  
+  }
+}
+
 // ***************************************************************
 
 
@@ -107,8 +160,9 @@ void receiveMessage() {
 // output: none
 // ***************************************************************
 void myButton_isr() {
+  Init_Mode = false;
   Queue1.call(sendMessage, "button pushed");
-}
+  }
 
 
 // ******** socket_isr()******************************************
@@ -119,6 +173,11 @@ void myButton_isr() {
 // output: none
 // ***************************************************************
 void socket_isr(){
-  Queue1.call(receiveMessage);  // call-back might come from ISR
+  if(Init_Mode){
+    Queue1.call(pairSlaves);      
+  }
+  else{
+    Queue1.call(receiveMessage);  
+  }
 }
 
