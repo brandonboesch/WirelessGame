@@ -15,6 +15,7 @@
 #define UDP_PORT 1234
 #define DATA_ARRAY_SIZE 20
 #define DATA_COLLECT_RATE 0.01
+#define IP_LAST4_OFFSET 35
 
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
@@ -70,12 +71,13 @@ void slaveInit(NetworkInterface *interface){
 }
 
 
-// ******** calcDataValues()******************************************
-// about:  Average values in the array and send as message
+// ******** calcAngle()******************************************
+// about:  Averages values in the date array, translates cartesian 
+//         coordinates to polar, and then sends as message.
 // input:  none
 // output: none
 // ***************************************************************
-void calcDataValues(){
+void calcAngle(){
   Data valueAvg = {0};                               // holds average of values in array
   for(uint8_t i = 0; i < DATA_ARRAY_SIZE; i++){      // calculate average
     //valueAvg.ax += valueArray[i].ax;               // x value added. Not used
@@ -86,13 +88,11 @@ void calcDataValues(){
   valueAvg.ay = valueAvg.ay/DATA_ARRAY_SIZE;         // y value averaged
   valueAvg.az = valueAvg.az/DATA_ARRAY_SIZE;         // z value averaged
 
-  float angle = atan2(valueAvg.az,valueAvg.ay);      // calculate from cartesian to polar
+  float angle = atan2(valueAvg.az,valueAvg.ay);      // translate cartesian to polar
   
-  char buffer[COMM_BUFF_SIZE];                       // string to hold average
-  snprintf(buffer, sizeof buffer, "angle = %.2f", angle);  // load the string
-
-  sendMessage(buffer);                                    // broadcast averaged data
-
+  char angleBuff[COMM_BUFF_SIZE];                    // string to hold average
+  snprintf(angleBuff, sizeof angleBuff, "angle = %.2f", angle);  // load the string
+  sendMessage(angleBuff);                                  // broadcast averaged data
   TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE); // turn measuring isr back on
 }
 
@@ -101,7 +101,7 @@ void calcDataValues(){
 // about:  Broadcast a message to all connected devices
 // input:  messageBuff - string of message you wish to broadcast
 // output: none
-// ***************************************************************
+// **************************************************************
 void sendMessage(const char messageBuff[COMM_BUFF_SIZE]) {
   tr_debug("sending message: %s", messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
@@ -109,7 +109,7 @@ void sendMessage(const char messageBuff[COMM_BUFF_SIZE]) {
 }
 
 
-// ******** receiveMessage()*********************************************
+// ******** receiveMessage()**************************************
 // about:  Reads all data from the socket
 // input:  none
 // output: none
@@ -119,10 +119,11 @@ void receiveMessage() {
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
+  // loop while data exists in buffer
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
-      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address(),ReceiveBuffer);
+      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
@@ -147,7 +148,7 @@ void receiveMessage() {
 // output: none
 // ***************************************************************
 void myButton_isr() {
-  Queue1.call(sendMessage, "button");
+  Queue1.call(sendMessage, "button pushed");
 }
 
 
@@ -163,17 +164,18 @@ void socket_isr(){
 }
 
 
-// ******** accelMeasure_isr() ************************************************
-// about:  measure the accelerometer, and store the results 
+// ******** accelMeasure_isr() ***********************************
+// about:  measure the accelerometer, and store the results. If array 
+//         is fills up, then initiate calcAngle function call.
 // input:  none
 // output: none
-// *****************************************************************
+// ***************************************************************
 void accelMeasure_isr(){
   valueArray[valueArrayIndex] = device.get_values();
   valueArrayIndex++;
   if(valueArrayIndex == DATA_ARRAY_SIZE){
     valueArrayIndex = 0;   
     TickerAccel.detach();
-    Queue1.call(calcDataValues);
+    Queue1.call(calcAngle);
   }
 }

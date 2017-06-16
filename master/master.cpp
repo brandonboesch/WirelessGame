@@ -11,6 +11,8 @@
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
+#define IP_LAST4_OFFSET 35
+
 
 // ******************** GLOBALS *************************************
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
@@ -76,10 +78,11 @@ void receiveMessage() {
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
+  // loop while data exists in buffer
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
-      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address(),ReceiveBuffer);
+      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
@@ -104,7 +107,7 @@ void receiveMessage() {
 // output: none
 // ***************************************************************
 void myButton_isr() {
-  Queue1.call(sendMessage, "button press");
+  Queue1.call(sendMessage, "button pushed");
 }
 
 

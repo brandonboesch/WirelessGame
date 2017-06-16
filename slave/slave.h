@@ -6,7 +6,7 @@
 void slaveInit(NetworkInterface *interface);
 void sendMessage(const char messageBuff[COMM_BUFF_SIZE]); 
 void receiveMessage();
-void calcDataValues();
+void calcAngle();
 
 void accelMeasure_isr();
 void myButton_isr();
