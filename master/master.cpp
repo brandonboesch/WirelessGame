@@ -27,7 +27,7 @@ SocketAddress Slave4_Addr = NULL;
 uint8_t MultiCastAddr[16] = {0};
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
-bool Init_Mode = true;                      // determines wheter in init mode of game mode
+bool Init_Mode = true;                      // determines wheter in init mode or game mode
 // ******************************************************************
 
 
@@ -161,7 +161,7 @@ void pairSlaves() {
 // ***************************************************************
 void myButton_isr() {
   Init_Mode = false;
-  Queue1.call(sendMessage, "button pushed");
+  Queue1.call(sendMessage, "Init complete\n");
   }
 
 

@@ -84,7 +84,7 @@ void trace_printer(const char* str){
 // output: none
 // ******************************************************************
 void start_blinking(float freq){
-  Ticker1.attach(blink, 1.0);
+  Ticker1.attach(blink, freq);
 }
 
 
@@ -119,7 +119,7 @@ int main(){
   mbed_trace_print_function_set(trace_printer);
 
   if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
-    start_blinking(1.0);
+    start_blinking(0.5);
   }
   else{
     printf("pins not configured correctly");
@@ -140,7 +140,7 @@ int main(){
 
   if(MBED_CONF_APP_BUTTON != NC && MBED_CONF_APP_LED != NC){
     cancel_blinking();
-    Ticker1.attach(blink, 0.5);
+    start_blinking(2);
     slaveInit((NetworkInterface *)&mesh); 
   }
 }

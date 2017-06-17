@@ -9,6 +9,7 @@
 #include "mbed-trace/mbed_trace.h"
 #include "FXOS8700CQ.h"
 #include <math.h>
+#include <string.h>
 
 #define TRACE_GROUP "Slave"
 #define MULTICAST_ADDR_STR "ff03::1"
@@ -25,12 +26,13 @@ EventQueue Queue1;                          // queue for sending messages from b
 Timeout MessageTimeout;
 Ticker TickerAccel;                         // timer for measuring accelerometer data
 FXOS8700CQ device(I2C_SDA,I2C_SCL);         // accelerometer device
+Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
 
 uint8_t MultiCastAddr[16] = {0};            // address for multi device broadcasting
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can go       
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
-Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
 uint8_t valueArrayIndex = 0;                // index for valueArray
+bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 // ******************************************************************
 
@@ -54,9 +56,6 @@ void slaveInit(NetworkInterface *interface){
 
   // initialize accelerometer
   device.init();                       
-
-  // attach accelerometer measuring function to ticker
-//  TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE);
  
   // configure button interrupt
   if(MBED_CONF_APP_BUTTON != NC){
@@ -93,6 +92,7 @@ void calcAngle(){
   char angleBuff[COMM_BUFF_SIZE];                    // string to hold average
   snprintf(angleBuff, sizeof angleBuff, "angle = %.2f", angle);  // load the string
   sendMessage(angleBuff);                                  // broadcast averaged data
+  printf("%s\n",angleBuff);
   TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE); // turn measuring isr back on
 }
 
@@ -123,7 +123,12 @@ void receiveMessage() {
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
-      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+      if(strcmp((const char*)ReceiveBuffer,"Init complete\n") == 0 && Init_Mode){   // strings are equal
+        Init_Mode = false;
+        printf("Begin accelerometer\n");
+        // attach accelerometer measuring function to ticker
+        TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE);
+      }
     }
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
@@ -160,7 +165,7 @@ void myButton_isr() {
 // output: none
 // ***************************************************************
 void socket_isr(){
-  Queue1.call(receiveMessage);  // call-back might come from ISR
+  if(Init_Mode) Queue1.call(receiveMessage);  
 }
 
 
