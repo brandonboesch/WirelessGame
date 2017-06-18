@@ -22,6 +22,7 @@
 #include "NanostackInterface.h"
 #include "mbed-trace/mbed_trace.h"
 #include "slave.h"
+#include "led.h"
 
 #define ATMEL   1
 #define MCR20   2
@@ -30,16 +31,6 @@
 
 #define MESH_LOWPAN     3
 #define MESH_THREAD     4
-
-
-// ****************** PROTOTYPES ************************************
-void trace_printer(const char* str);
-void start_blinking(float freq, const char* color);
-void cancel_blinking();
-void blink_red();
-void blink_green();
-void blink_blue();
-// ******************************************************************
 
 
 // ******************** GLOBALS *************************************
@@ -62,10 +53,6 @@ LoWPANNDInterface mesh;
 ThreadInterface mesh;
 #endif //MBED_CONF_APP_MESH_TYPE
 
-Ticker Ticker1;                   // for LED blinking
-DigitalOut LED_1(LED_RED, 1);     // onboard red LED
-DigitalOut LED_2(LED_GREEN, 1);   // onboard green LED
-DigitalOut LED_3(LED_BLUE, 1);    // onboard blue LED
 // ******************************************************************
 
 
@@ -79,62 +66,6 @@ DigitalOut LED_3(LED_BLUE, 1);    // onboard blue LED
 
 void trace_printer(const char* str){
   printf("%s\n", str);
-}
-
-
-// ******** start_blinking() ************************************
-// about:  Creates a thread every second which blinks the red LED
-// input:  freq - freq in which to blink led
-//         color - color led you wish to turn on, in string format
-// output: none
-// ******************************************************************
-void start_blinking(float freq, const char* color){
-  if(strcmp("red", color) == 0)   Ticker1.attach(blink_red, freq);
-  if(strcmp("green", color) == 0) Ticker1.attach(blink_green, freq);
-  if(strcmp("blue", color) == 0)  Ticker1.attach(blink_blue, freq);
-}
-
-
-// ******** cancel_blinking() ***********************************
-// about:  kill blinking led thread, and turn off all led colors
-// input:  none
-// output: none
-// ******************************************************************
-void cancel_blinking(){
-  Ticker1.detach();
-  LED_1 = 1;
-  LED_2 = 1;
-  LED_3 = 1;
-}
-
-
-// ******** blink_red() ********************************************
-// about:  flip the status of the red LED 
-// input:  none
-// output: none
-// *****************************************************************
-void blink_red(){
-  LED_1 = !LED_1;
-}
-
-
-// ******** blink_green() ********************************************
-// about:  flip the status of the green LED 
-// input:  none
-// output: none
-// *****************************************************************
-void blink_green(){
-  LED_2 = !LED_2;
-}
-
-
-// ******** blink_blue() ********************************************
-// about:  flip the status of the blue LED 
-// input:  none
-// output: none
-// *****************************************************************
-void blink_blue(){
-  LED_3 = !LED_3;
 }
 
 

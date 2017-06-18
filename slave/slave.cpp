@@ -8,6 +8,7 @@
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
 #include "FXOS8700CQ.h"
+#include "led.h"
 #include <math.h>
 #include <string.h>
 
@@ -23,10 +24,9 @@ NetworkInterface *NetworkIf;                // interface used to create a UDP so
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
-Timeout MessageTimeout;
-Ticker TickerAccel;                         // timer for measuring accelerometer data
 FXOS8700CQ device(I2C_SDA,I2C_SCL);         // accelerometer device
 Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
+Ticker TickerAccel;                         // timer for measuring accelerometer data
 
 uint8_t MultiCastAddr[16] = {0};            // address for multi device broadcasting
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can go       
@@ -46,6 +46,7 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 // output: none
 // ******************************************************************
 void slaveInit(NetworkInterface *interface){
+  cancel_blinking();
   printf("Initializing slave device\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
@@ -140,6 +141,8 @@ void receiveMessage() {
     }  
   }
 }
+
+
 // ***************************************************************
 
 

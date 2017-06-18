@@ -7,6 +7,7 @@
 #include "ip6string.h"
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
+#include "led.h"
 
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
@@ -101,6 +102,7 @@ void receiveMessage() {
   }
 }
 
+
 // ******** pairSlaves()******************************************
 // about:  Reads all data from the socket and pairs with slaves
 // input:  none
@@ -146,6 +148,7 @@ void pairSlaves() {
     }  
   }
 }
+
 
 // ***************************************************************
 
