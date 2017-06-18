@@ -13,6 +13,7 @@
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
+#define MAX_NUM_SLAVES 4
 
 
 // ******************** GLOBALS *************************************
@@ -20,6 +21,8 @@ NetworkInterface *NetworkIf;                // interface used to create a UDP so
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages
+
+SocketAddress SlaveAddr[MAX_NUM_SLAVES] = {NULL};
 SocketAddress Slave1_Addr = NULL;
 SocketAddress Slave2_Addr = NULL;
 SocketAddress Slave3_Addr = NULL;
@@ -104,7 +107,9 @@ void receiveMessage() {
 
 
 // ******** pairSlaves()******************************************
-// about:  Reads all data from the socket and pairs with slaves
+// about:  Reads all data from the socket. Attempts to connect and 
+//         enumerate slaves when they send pair requests. Should only
+//         run while system is in Init_Mode. 
 // input:  none
 // output: none
 // ***************************************************************
@@ -113,10 +118,20 @@ void pairSlaves() {
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
-  // loop while data exists in buffer
+  // continue looping while data exists in buffer
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
+      
+      // checks if slave is already assigned in system.  If not, then check if there are any unsigned slaves remaining. If a slot is available, then assign the new request there.
+      for(int i = 1; i < MAX_NUM_SLAVES; i++){
+        // check if slave is already assigned
+      }
+
+      for(int i = 1; i< MAX_NUM_SLAVES; i++){
+        // find an empty slot to place it in
+      }
+
       if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave1 assigned\n");
         Slave1_Addr = source_addr;
