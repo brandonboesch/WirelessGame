@@ -29,7 +29,7 @@ SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
-uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
+uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 // ******************************************************************
 
@@ -69,10 +69,10 @@ void masterInit(NetworkInterface *interface){
 // input:  messageBuff - string of message you wish to broadcast
 // output: none
 // ***************************************************************
-void sendMessage(const char messageBuff[BUFF_SIZE]) {
+void sendMessage(const char messageBuff[COMM_BUFF_SIZE]) {
   tr_debug("sending message: %s", messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
-  MySocket->sendto(send_sockAddr, messageBuff, BUFF_SIZE);
+  MySocket->sendto(send_sockAddr, messageBuff,COMM_BUFF_SIZE);
 }
 
 

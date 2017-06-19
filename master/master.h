@@ -4,7 +4,7 @@
 
 
 void masterInit(NetworkInterface *interface);
-void sendMessage(const char messageBuff[BUFF_SIZE]); 
+void sendMessage(const char messageBuff[COMM_BUFF_SIZE]); 
 void receiveMessage();
 void pairSlaves();
 
