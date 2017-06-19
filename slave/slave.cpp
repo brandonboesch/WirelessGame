@@ -46,7 +46,6 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 // output: none
 // ******************************************************************
 void slaveInit(NetworkInterface *interface){
-  cancel_blinking();
   printf("Initializing slave device\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
@@ -126,6 +125,8 @@ void receiveMessage() {
     if (length > 0) {
       if(strcmp((const char*)ReceiveBuffer,"Init complete\n") == 0 && Init_Mode){   // strings are equal
         Init_Mode = false;
+        cancel_blinking();
+        start_blinking(0.5, "blue");
         printf("Begin accelerometer\n");
         // attach accelerometer measuring function to ticker
         TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE);

@@ -173,6 +173,8 @@ void pairSlaves() {
 // ***************************************************************
 void myButton_isr() {
   Init_Mode = false;
+  cancel_blinking();
+  start_blinking(0.5, "blue");
   Queue1.call(sendMessage, "Init complete\n");
   }
 
