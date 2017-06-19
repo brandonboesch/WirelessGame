@@ -22,13 +22,12 @@ UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages
 
-SocketAddress SlaveAddr[MAX_NUM_SLAVES] = {NULL};
-SocketAddress Slave1_Addr = NULL;
-SocketAddress Slave2_Addr = NULL;
-SocketAddress Slave3_Addr = NULL;
-SocketAddress Slave4_Addr = NULL;
+SocketAddress Slave1_Addr = NULL;           // address for slave 1
+SocketAddress Slave2_Addr = NULL;           // address for slave 2
+SocketAddress Slave3_Addr = NULL;           // address for slave 3
+SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
-uint8_t MultiCastAddr[16] = {0};
+uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[BUFF_SIZE];           // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
@@ -123,18 +122,11 @@ void pairSlaves() {
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
       
-      // checks if slave is already assigned in system.  If not, then check if there are any unsigned slaves remaining. If a slot is available, then assign the new request there.
-      for(int i = 1; i < MAX_NUM_SLAVES; i++){
-        // check if slave is already assigned
-      }
-
-      for(int i = 1; i< MAX_NUM_SLAVES; i++){
-        // find an empty slot to place it in
-      }
-
+      // checks if slave is already assigned in system.  If not, and If a slot is available, then assign the new pair request there.
       if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave1 assigned\n");
         Slave1_Addr = source_addr;
+
       }
       else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave2 assigned\n");
@@ -150,9 +142,11 @@ void pairSlaves() {
         Slave4_Addr = source_addr;
       }
 
+      // print out current pairing results
       printf("\nSlave1_Addr: %s\nSlave2_Addr: %s\nSlave3_Addr: %s\nSlave4_Addr: %s\n", Slave1_Addr.get_ip_address(), Slave2_Addr.get_ip_address(), Slave3_Addr.get_ip_address(), Slave4_Addr.get_ip_address());
     }
-
+    
+    // error checkong
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
       something_in_socket=false;
