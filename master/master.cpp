@@ -8,12 +8,25 @@
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
 #include "led.h"
+#include "Adafruit_ST7735.h"
 
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
+
+// ****** ST7735 Interface ***********************************
+//   LITE connected to +3.3 V
+//   MISO connected to PTD7
+//   SCK connected to PTD5
+//   MOSI connected to PTD6
+//   TFT_CS connected to PTD4
+//   CARD_CS unconnected 
+//   D/C connected to PTC18
+//   RESET connected to +3.3 V
+//   VCC connected to +3.3 V
+//   Gnd connected to ground
 
 
 // ******************** GLOBALS *************************************
@@ -26,6 +39,9 @@ SocketAddress Slave1_Addr = NULL;           // address for slave 1
 SocketAddress Slave2_Addr = NULL;           // address for slave 2
 SocketAddress Slave3_Addr = NULL;           // address for slave 3
 SocketAddress Slave4_Addr = NULL;           // address for slave 4
+
+Adafruit_ST7735 tft(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
+
 
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
@@ -43,6 +59,12 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 // output: none
 // ******************************************************************
 void masterInit(NetworkInterface *interface){
+  // Use this initializer if you're using a 1.8" TFT
+  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_RED);
+  tft.drawPixel(100, 100, ST7735_BLACK);
+  tft.drawPixel(101, 101, ST7735_BLACK);
+
   printf("Initializing master device\n");           
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
