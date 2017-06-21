@@ -28,12 +28,11 @@
 //   Gnd connected to ground
 
 
-Adafruit_ST7735 tft(PTD6, PTD7, PTD5, PTD4, PTC18, PTC4); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
-
+Adafruit_ST7735 tft(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
 
 int main(void){
   // Use this initializer if you're using a 1.8" TFT
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
 
-  tft.fillScreen(ST7735_GREEN);
+  tft.fillScreen(ST7735_BLUE);
 }
