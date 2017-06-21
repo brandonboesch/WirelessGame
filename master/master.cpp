@@ -52,6 +52,20 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 
 // ****************** FUNCTIONS *************************************
 
+// ******** game()************************************************
+// about:  A thread which handles all things related to the game
+// input:  none
+// output: none
+// ***************************************************************
+void game(void){
+  // Use this initializer if you're using a 1.8" TFT
+  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_RED);
+  tft.drawPixel(100, 100, ST7735_BLACK);
+  tft.drawPixel(101, 101, ST7735_BLACK);
+}
+
+
 // ******** master_init() *******************************************
 // about:  Initializes a new socket using UDP, configures button interrupts, 
 //         and dispatches the queue.
@@ -59,11 +73,7 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 // output: none
 // ******************************************************************
 void masterInit(NetworkInterface *interface){
-  // Use this initializer if you're using a 1.8" TFT
-  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  tft.fillScreen(ST7735_RED);
-  tft.drawPixel(100, 100, ST7735_BLACK);
-  tft.drawPixel(101, 101, ST7735_BLACK);
+  Queue1.call(game);
 
   printf("Initializing master device\n");           
   NetworkIf = interface;
