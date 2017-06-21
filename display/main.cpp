@@ -3,7 +3,7 @@
 
 // There are two different SPI ports that can be utilized on the K64F. Update the tft global below to match whichever pins your screen is connected to.
 
-// ST7735 Interface (Option 1)
+// ST7735 Interface (Option 1):
 //   LITE connected to +3.3 V
 //   MISO connected to PTD7
 //   SCK connected to PTD5
@@ -15,7 +15,7 @@
 //   VCC connected to +3.3 V
 //   Gnd connected to ground
 
-// ST7735 Interface (Option 2)
+// ST7735 Interface (Option 2):
 //   LITE connected to +3.3 V
 //   MISO connected to D12
 //   SCK connected to D13
@@ -33,6 +33,8 @@ Adafruit_ST7735 tft(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, T
 int main(void){
   // Use this initializer if you're using a 1.8" TFT
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_YELLOW);
+  tft.drawPixel(100, 100, ST7735_BLACK);
+  tft.drawPixel(101, 101, ST7735_BLACK);
 
-  tft.fillScreen(ST7735_BLUE);
 }
