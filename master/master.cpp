@@ -58,11 +58,9 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 // output: none
 // ***************************************************************
 void game(void){
-  // Use this initializer if you're using a 1.8" TFT
-  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  tft.fillScreen(ST7735_RED);
-  tft.drawPixel(100, 100, ST7735_BLACK);
-  tft.drawPixel(101, 101, ST7735_BLACK);
+  int16_t x = rand() % 160;
+  int16_t y = rand() % 128;
+  tft.drawPixel(x, y, ST7735_BLACK);
 }
 
 
@@ -73,7 +71,10 @@ void game(void){
 // output: none
 // ******************************************************************
 void masterInit(NetworkInterface *interface){
-  Queue1.call(game);
+  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
+  tft.fillScreen(ST7735_RED);
+
+  Queue1.call_every(1000,game);
 
   printf("Initializing master device\n");           
   NetworkIf = interface;

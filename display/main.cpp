@@ -34,7 +34,4 @@ int main(void){
   // Use this initializer if you're using a 1.8" TFT
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.fillScreen(ST7735_YELLOW);
-  tft.drawPixel(100, 100, ST7735_BLACK);
-  tft.drawPixel(101, 101, ST7735_BLACK);
-
 }
