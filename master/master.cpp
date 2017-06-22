@@ -98,7 +98,7 @@ int main(void){
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
   TFT.fillScreen(ST7735_GREEN);
-  TFT.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
+  //TFT.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
   TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
   TFT.drawCircle(80, 64, 10, ST7735_BLACK);
 
