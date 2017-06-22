@@ -16,17 +16,25 @@
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
 
-// ****** ST7735 Interface ***********************************
-//   LITE connected to +3.3 V
-//   MISO connected to PTD7
-//   SCK connected to PTD5
-//   MOSI connected to PTD6
-//   TFT_CS connected to PTD4
-//   CARD_CS unconnected 
-//   D/C connected to PTC18
-//   RESET connected to +3.3 V
-//   VCC connected to +3.3 V
-//   Gnd connected to ground
+// ****** ST7735 Interface ******************************************
+//
+// Pinout:
+//   LITE    - connected to +3.3 V
+//   MISO    - connected to PTD7
+//   SCK     - connected to PTD5
+//   MOSI    - connected to PTD6
+//   TFT_CS  - connected to PTD4
+//   CARD_CS - unconnected 
+//   D/C     - connected to PTC18
+//   RESET   - connected to +3.3 V
+//   VCC     - connected to +3.3 V
+//   Gnd     - connected to ground
+
+// Coordinates when rotation=3:
+//   Top left     = (0, 0)
+//   Bottom right = (159, 127)
+
+// ******************************************************************
 
 
 // ******************** GLOBALS *************************************
@@ -72,7 +80,9 @@ void game(void){
 // ******************************************************************
 void masterInit(NetworkInterface *interface){
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  tft.fillScreen(ST7735_RED);
+  tft.setRotation(3);
+  tft.fillScreen(ST7735_GREEN);
+  tft.drawFastVLine(80, 0, 128, ST7735_BLACK);
 
   Queue1.call_every(1000,game);
 
