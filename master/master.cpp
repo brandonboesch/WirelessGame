@@ -83,8 +83,7 @@ void masterInit(NetworkInterface *interface){
   tft.setRotation(3);
   tft.fillScreen(ST7735_GREEN);
   tft.drawFastVLine(80, 0, 128, ST7735_BLACK);
-
-  Queue1.call_every(1000,game);
+  tft.drawCircle(80, 64, 10, ST7735_BLACK);
 
   printf("Initializing master device\n");           
   NetworkIf = interface;
@@ -215,10 +214,11 @@ void pairSlaves() {
 // output: none
 // ***************************************************************
 void myButton_isr() {
-  Init_Mode = false;
-  cancel_blinking();
-  start_blinking(0.5, "blue");
-  Queue1.call(sendMessage, "Init complete\n");
+  Init_Mode = false;                             // finishing initilization mode
+  cancel_blinking();                             // turn off last stages heartbeat
+  start_blinking(0.5, "blue");                   // change LED color to signify next state
+  Queue1.call(sendMessage, "Init complete\n");   // output to console
+  Queue1.call_every(100,game);                   // start up the game after button press
   }
 
 
