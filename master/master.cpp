@@ -5,6 +5,8 @@
 #include "mbed.h"
 #include "master.h"
 #include "ip6string.h"
+#include "NanostackInterface.h"
+#include "NanostackRfPhyAtmel.h"
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
 #include "led.h"
@@ -39,6 +41,10 @@
 
 
 // ******************** GLOBALS *************************************
+NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
+                           ATMEL_SPI_RST, ATMEL_SPI_SLP, ATMEL_SPI_IRQ, ATMEL_I2C_SDA, 
+                           ATMEL_I2C_SCL);  // phy for Atmel shield
+ThreadInterface mesh;                       // mesh interface using Thread
 NetworkInterface *NetworkIf;                // interface used to create a UDP socket
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
@@ -49,7 +55,7 @@ SocketAddress Slave2_Addr = NULL;           // address for slave 2
 SocketAddress Slave3_Addr = NULL;           // address for slave 3
 SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
-Adafruit_ST7735 tft(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
+Adafruit_ST7735 TFT(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
 
 
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
@@ -61,6 +67,7 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 
 // ****************** FUNCTIONS *************************************
 
+
 // ******** game()************************************************
 // about:  A thread which handles all things related to the game
 // input:  none
@@ -69,41 +76,58 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 void game(void){
   int16_t x = rand() % 160;
   int16_t y = rand() % 128;
-  tft.drawPixel(x, y, ST7735_BLACK);
+  TFT.drawPixel(x, y, ST7735_BLACK);
 }
 
 
-// ******** master_init() *******************************************
+// ******** main() *******************************************
 // about:  Initializes a new socket using UDP, configures button interrupts, 
 //         and dispatches the queue.
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
-void masterInit(NetworkInterface *interface){
-  printf("Initializing master device\n"); 
-  
-  // setup the display
-  tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  tft.setRotation(3);
-  tft.fillScreen(ST7735_GREEN);
-  tft.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
-  tft.drawFastVLine(80, 0, 128, ST7735_BLACK);
-  tft.drawCircle(80, 64, 10, ST7735_BLACK);
+int main(void){
+  printf("Initializing master device\n");
 
+  // setup trace printing for debug
+  mbed_trace_init();
+  mbed_trace_print_function_set(trace_printer);
+  start_blinking(0.5, "red");
+
+  // setup the display
+  TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
+  TFT.setRotation(3);
+  TFT.fillScreen(ST7735_GREEN);
+  TFT.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
+  TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
+  TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+
+  // connect to mesh and get IP address
+  printf("\n\nConnecting...\n");
+  mesh.initialize(&rf_phy);
+  int error=-1;
+  if((error=mesh.connect())){
+    printf("Connection failed! %d\n", error);
+    return error;
+  }
+  while(NULL == mesh.get_ip_address()){
+    Thread::wait(500);
+  }
+  printf("connected. IP = %s\n", mesh.get_ip_address());
+  cancel_blinking();
+  start_blinking(0.5, "green");
+ 
   // initialize the network socket
-  NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
-  MySocket = new UDPSocket(NetworkIf);
+  MySocket = new UDPSocket(&mesh);
   MySocket->set_blocking(false);
   MySocket->bind(UDP_PORT);  
   MySocket->setsockopt(SOCKET_IPPROTO_IPV6, SOCKET_IPV6_MULTICAST_HOPS, &MulticastHops, sizeof(MulticastHops));
  
   // configure button interrupt
-  if(MBED_CONF_APP_BUTTON != NC){
-  	MyButton.fall(&myButton_isr);
-  }
+  MyButton.fall(&myButton_isr);
 
-  //if something happens in socket (packets in or out), the call-back is called.
+  // if something happens in socket (packets in or out), the call-back is called.
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
@@ -204,6 +228,17 @@ void pairSlaves() {
     }  
   }
 }
+
+
+// ******** trace_printer() *****************************************
+// about:  Function that calls printf
+// input:  *str - pointer to string that will be printed
+// output: none
+// ******************************************************************
+void trace_printer(const char* str){
+  printf("%s\n", str);
+}
+
 
 
 // ***************************************************************

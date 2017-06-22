@@ -3,7 +3,8 @@
 // Date    : June 12th, 2017
 
 
-void masterInit(NetworkInterface *interface);
+int main(void);
+void trace_printer(const char* str);
 void sendMessage(const char messageBuff[COMM_BUFF_SIZE]); 
 void receiveMessage();
 void pairSlaves();
