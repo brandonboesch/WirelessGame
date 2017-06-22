@@ -9,6 +9,7 @@
 #include "mbed-trace/mbed_trace.h"
 #include "led.h"
 #include "Adafruit_ST7735.h"
+#include "bmp.h"
 
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
@@ -79,13 +80,17 @@ void game(void){
 // output: none
 // ******************************************************************
 void masterInit(NetworkInterface *interface){
+  printf("Initializing master device\n"); 
+  
+  // setup the display
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.setRotation(3);
   tft.fillScreen(ST7735_GREEN);
+  tft.drawBitmap(30, 108, bmp_Logo, 70, 100, ST7735_WHITE);
   tft.drawFastVLine(80, 0, 128, ST7735_BLACK);
   tft.drawCircle(80, 64, 10, ST7735_BLACK);
 
-  printf("Initializing master device\n");           
+  // initialize the network socket
   NetworkIf = interface;
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   MySocket = new UDPSocket(NetworkIf);
