@@ -5,6 +5,8 @@
 #include "mbed.h"
 #include "slave.h"
 #include "ip6string.h"
+#include "NanostackInterface.h"
+#include "NanostackRfPhyAtmel.h"
 #include "nanostack/socket_api.h"
 #include "mbed-trace/mbed_trace.h"
 #include "FXOS8700CQ.h"
@@ -20,13 +22,17 @@
 #define IP_LAST4_OFFSET 35
 
 // ******************** GLOBALS *************************************
-NetworkInterface *NetworkIf;                // interface used to create a UDP socket
+NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
+                           ATMEL_SPI_RST, ATMEL_SPI_SLP, ATMEL_SPI_IRQ, ATMEL_I2C_SDA, 
+                           ATMEL_I2C_SCL);  // phy for Atmel shield
+ThreadInterface mesh;                       // mesh interface using Thread
 UDPSocket* MySocket;                        // pointer to UDP socket
 InterruptIn MyButton(MBED_CONF_APP_BUTTON); // user input button
 EventQueue Queue1;                          // queue for sending messages from button press
 FXOS8700CQ device(I2C_SDA,I2C_SCL);         // accelerometer device
 Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
 Ticker TickerAccel;                         // timer for measuring accelerometer data
+
 
 uint8_t MultiCastAddr[16] = {0};            // address for multi device broadcasting
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can go       
@@ -39,17 +45,38 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 
 // ****************** FUNCTIONS *************************************
 
-// ******** slaveInit() *******************************************
+// ******** main() **************************************************
 // about:  Initializes a new socket using UDP, configures button interrupts, 
 //         and dispatches the queue.
 // input:  *interface - interface used to create a UDP socket
 // output: none
 // ******************************************************************
-void slaveInit(NetworkInterface *interface){
-  printf("Initializing slave device\n");           
-  NetworkIf = interface;
+int main(void){
+  printf("Initializing slave device\n"); 
+
+  // setup trace printing for debug
+  mbed_trace_init();
+  mbed_trace_print_function_set(trace_printer);
+  start_blinking(0.5, "red");
+
+  // connect to mesh and get IP address
+  printf("\n\nConnecting...\n");
+  mesh.initialize(&rf_phy);
+  int error=-1;
+  if((error=mesh.connect())){
+    printf("Connection failed! %d\n", error);
+    return error;
+  }
+  while(NULL == mesh.get_ip_address()){
+    Thread::wait(500);
+  }
+  printf("connected. IP = %s\n", mesh.get_ip_address());
+  cancel_blinking();
+  start_blinking(0.5, "green");
+
+  // initialize the network socket
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
-  MySocket = new UDPSocket(NetworkIf);
+  MySocket = new UDPSocket(&mesh);
   MySocket->set_blocking(false);
   MySocket->bind(UDP_PORT);  
   MySocket->setsockopt(SOCKET_IPPROTO_IPV6, SOCKET_IPV6_MULTICAST_HOPS, &MulticastHops, sizeof(MulticastHops));
@@ -58,9 +85,8 @@ void slaveInit(NetworkInterface *interface){
   device.init();                       
  
   // configure button interrupt
-  if(MBED_CONF_APP_BUTTON != NC){
-  	MyButton.fall(&myButton_isr);
-  }
+ 	MyButton.fall(&myButton_isr);
+
 
   //if something happens in socket (packets in or out), the call-back is called.
   MySocket->sigio(callback(socket_isr));
@@ -141,6 +167,16 @@ void receiveMessage() {
       something_in_socket=false;
     }  
   }
+}
+
+
+// ******** trace_printer() *****************************************
+// about:  Function that calls printf
+// input:  *str - pointer to string that will be printed
+// output: none
+// ******************************************************************
+void trace_printer(const char* str){
+  printf("%s\n", str);
 }
 
 

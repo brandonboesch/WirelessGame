@@ -3,10 +3,11 @@
 // Date    : June 12th, 2017
 
 
-void slaveInit(NetworkInterface *interface);
+int main(void);
 void sendMessage(const char messageBuff[COMM_BUFF_SIZE]); 
 void receiveMessage();
 void calcAngle();
+void trace_printer(const char* str);
 
 void accelMeasure_isr();
 void myButton_isr();
