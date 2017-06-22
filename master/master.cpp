@@ -86,7 +86,7 @@ void masterInit(NetworkInterface *interface){
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.setRotation(3);
   tft.fillScreen(ST7735_GREEN);
-  tft.drawBitmap(30, 108, bmp_Logo, 70, 100, ST7735_WHITE);
+  tft.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
   tft.drawFastVLine(80, 0, 128, ST7735_BLACK);
   tft.drawCircle(80, 64, 10, ST7735_BLACK);
 

@@ -1,8 +1,6 @@
 // bmp.h
-// Contains all bmp files used in the lab
+// Contains all bmp files used in the project
 // Brandon Boesch
-// Curtis Martin
-// September 1st, 2014
 
 const uint16_t bmp_Logo[] = {
  0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
