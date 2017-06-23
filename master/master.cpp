@@ -62,6 +62,9 @@ uint8_t MultiCastAddr[16] = {0};            // address used for multicast messag
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
+
+float Slave1_Angle = 0;                    // latest angle stored in system for Slave1
+
 // ******************************************************************
 
 
@@ -162,6 +165,25 @@ void receiveMessage() {
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
       printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+
+      // need to update the slaves' current angles based off their transmission data
+      if(source_addr.get_ip_address()==Slave1_Addr){
+        char* angleString = (char*)ReceiveBuffer;
+        char* segment;
+        // splitting angleString into segments using tokens
+        segment = strtok (angleString, " = ");
+        int segmentIndex = 0;                       // segment # in string
+        while (segment != NULL){
+          if(segmentIndex == 1){                    // grab value for angle here
+            Slave1_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+          }
+          segment = strtok(NULL, " = ");            // advances segment for next iteration
+          segmentIndex++;                           // next segment
+        }
+       
+        //  update Slave's current angle 
+        printf("Slave1_Angle = %.2f\n", Slave1_Angle);
+      }
     }
 
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
@@ -194,20 +216,24 @@ void pairSlaves() {
     if (length > 0) {
       
       // checks if slave is already assigned in system.  If not, and If a slot is available, then assign the new pair request there.
+      // Slave1
       if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave1 assigned\n");
         Slave1_Addr = source_addr;
 
+      // Slave2
       }
       else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave2 assigned\n");
         Slave2_Addr = source_addr;
       }
 
+      // Slave3
       else if(Slave3_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave4_Addr){
         printf("Slave3 assigned\n");
         Slave3_Addr = source_addr;
       }
+      // Slave4
       else if(Slave4_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave3_Addr){
         printf("Slave4 assigned\n");
         Slave4_Addr = source_addr;
