@@ -63,7 +63,8 @@ static const int16_t MulticastHops = 10;    // # of hops multicast messages can
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
-float Slave1_Angle = 0;                    // latest angle stored in system for Slave1
+float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
+float Slave1_OldPixel = 0;
 
 // ******************************************************************
 
@@ -77,9 +78,13 @@ float Slave1_Angle = 0;                    // latest angle stored in system for 
 // output: none
 // ***************************************************************
 void game(void){
-  int16_t x = rand() % 160;
-  int16_t y = rand() % 128;
-  TFT.drawPixel(x, y, ST7735_BLACK);
+
+  // translate Slave_Angle to pixel being drawn
+  TFT.drawPixel(140, Slave1_OldPixel, ST7735_GREEN);  // erase old pixel pos
+  float pixel = 128 - (abs(Slave1_Angle) / 0.0245);   // translate angle to pixel location
+  TFT.drawPixel(140, pixel, ST7735_BLACK);            // draw new pixel
+  Slave1_OldPixel = pixel;                            // update old pixel
+
 }
 
 
@@ -180,9 +185,6 @@ void receiveMessage() {
           segment = strtok(NULL, " = ");            // advances segment for next iteration
           segmentIndex++;                           // next segment
         }
-       
-        //  update Slave's current angle 
-        printf("Slave1_Angle = %.2f\n", Slave1_Angle);
       }
     }
 
@@ -284,7 +286,7 @@ void myButton_isr() {
   cancel_blinking();                             // turn off last stages heartbeat
   start_blinking(0.5, "blue");                   // change LED color to signify next state
   Queue1.call(sendMessage, "Init complete\n");   // output to console
-  Queue1.call_every(100,game);                   // start up the game after button press
+  Queue1.call_every(10,game);                    // start up the game after button press
   }
 
 

@@ -113,8 +113,8 @@ void calcAngle(){
   valueAvg.ay = valueAvg.ay/DATA_ARRAY_SIZE;         // y value averaged
   valueAvg.az = valueAvg.az/DATA_ARRAY_SIZE;         // z value averaged
 
-  float angle = atan2(valueAvg.az,valueAvg.ay);      // translate cartesian to polar
-  
+  float angle = atan2(valueAvg.az,valueAvg.ay);      // translate cartesian to polar.
+ 
   char angleBuff[COMM_BUFF_SIZE];                    // string to hold average
   snprintf(angleBuff, sizeof angleBuff, "angle = %.2f", angle);  // load the string
   sendMessage(angleBuff);                                  // broadcast averaged data
