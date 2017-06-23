@@ -66,6 +66,10 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
 float Slave1_OldPixel = 0;
 
+float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
+float Slave2_OldPixel = 0;
+
+
 // ******************************************************************
 
 
@@ -79,12 +83,14 @@ float Slave1_OldPixel = 0;
 // ***************************************************************
 void game(void){
 
-  // translate Slave_Angle to pixel being drawn
-  TFT.drawPixel(140, Slave1_OldPixel, ST7735_GREEN);  // erase old pixel pos
-  float pixel = 128 - (abs(Slave1_Angle) / 0.0245);   // translate angle to pixel location
-  TFT.drawPixel(140, pixel, ST7735_BLACK);            // draw new pixel
-  Slave1_OldPixel = pixel;                            // update old pixel
-
+  TFT.drawPixel(30, Slave1_OldPixel, ST7735_GREEN);   // erase old pixel pos
+  TFT.drawPixel(140, Slave2_OldPixel, ST7735_GREEN);  // erase old pixel pos
+  float pixel1 = 128 - (abs(Slave1_Angle) / 0.0245);  // translate angle to pixel location
+  float pixel2 = 128 - (abs(Slave2_Angle) / 0.0245);  // translate angle to pixel location
+  TFT.drawPixel(30, pixel1, ST7735_BLACK);            // draw new pixel
+  TFT.drawPixel(140, pixel2, ST7735_BLACK);           // draw new pixel
+  Slave1_OldPixel = pixel1;                           // update old pixel
+  Slave2_OldPixel = pixel2;                           // update old pixel
 }
 
 
@@ -172,6 +178,7 @@ void receiveMessage() {
       printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
 
       // need to update the slaves' current angles based off their transmission data
+      // Slave1
       if(source_addr.get_ip_address()==Slave1_Addr){
         char* angleString = (char*)ReceiveBuffer;
         char* segment;
@@ -181,6 +188,22 @@ void receiveMessage() {
         while (segment != NULL){
           if(segmentIndex == 1){                    // grab value for angle here
             Slave1_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+          }
+          segment = strtok(NULL, " = ");            // advances segment for next iteration
+          segmentIndex++;                           // next segment
+        }
+      }
+
+      // Slave2
+      else if(source_addr.get_ip_address()==Slave2_Addr){
+        char* angleString = (char*)ReceiveBuffer;
+        char* segment;
+        // splitting angleString into segments using tokens
+        segment = strtok (angleString, " = ");
+        int segmentIndex = 0;                       // segment # in string
+        while (segment != NULL){
+          if(segmentIndex == 1){                    // grab value for angle here
+            Slave2_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
           }
           segment = strtok(NULL, " = ");            // advances segment for next iteration
           segmentIndex++;                           // next segment
