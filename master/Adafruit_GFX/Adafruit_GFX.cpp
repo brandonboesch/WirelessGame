@@ -386,6 +386,20 @@ int Adafruit_GFX::_getc() {
     return -1;
 }
 
+
+// draw a string
+void Adafruit_GFX::drawString(int16_t x, int16_t y,unsigned char *pt, 
+                              uint16_t color, uint16_t bg, uint8_t size){
+  this->textcolor = color;
+  this->textbgcolor = bg;
+  this->textsize = size;
+  while(*pt){
+    putc(pt[0]);
+    pt++;
+  }
+}
+
+
 // draw a character
 void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c,
                 uint16_t color, uint16_t bg, uint8_t size) {

@@ -74,6 +74,8 @@ public:
     void drawBitmap(int16_t x, int16_t y,
                     const uint8_t *bitmap, int16_t w, int16_t h,
                     uint16_t color);
+    void drawString(int16_t x, int16_t y,unsigned char *pt, 
+                    uint16_t color, uint16_t bg, uint8_t size);
     void drawChar(int16_t x, int16_t y, unsigned char c,
                   uint16_t color, uint16_t bg, uint8_t size);
 

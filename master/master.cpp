@@ -19,7 +19,7 @@
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
 #define ANGLE_DIV 0.0245                // PI / 128 pixels = 0.0245
-#define PADLE_SIZE 20                   // length of player's padle
+#define PADDLE_SIZE 20                  // length of player's paddle
 
 // ****** ST7735 Interface ******************************************
 //
@@ -84,12 +84,12 @@ float Slave2_OldPixel = 0;
 // output: none
 // ***************************************************************
 void game(void){
-  TFT.drawFastVLine(10, Slave1_OldPixel, PADLE_SIZE, ST7735_GREEN);
-  TFT.drawFastVLine(150, Slave2_OldPixel, PADLE_SIZE, ST7735_GREEN);
+  TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);
+  TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);
   float pixel1 = 128-(abs(Slave1_Angle)/ANGLE_DIV);   // translate angle to pixel location
   float pixel2 = 128-(abs(Slave2_Angle)/ANGLE_DIV);   // translate angle to pixel location
-  TFT.drawFastVLine(10, pixel1, PADLE_SIZE, ST7735_BLACK);
-  TFT.drawFastVLine(150, pixel2, PADLE_SIZE, ST7735_BLACK);
+  TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);
+  TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);
   Slave1_OldPixel = pixel1;                           // update old pixel
   Slave2_OldPixel = pixel2;                           // update old pixel
 }
@@ -113,9 +113,11 @@ int main(void){
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
   TFT.fillScreen(ST7735_GREEN);
-  //TFT.drawBitmap(0, 0, bmp_Logo, 160, 128, ST7735_WHITE);
   TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
   TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+
+  TFT.setCursor(0,0);
+  TFT.drawString(0, 0, (unsigned char*)("testing"), ST7735_WHITE, ST7735_BLACK, 1);
 
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
@@ -143,6 +145,7 @@ int main(void){
   MyButton.fall(&myButton_isr);
 
   // if something happens in socket (packets in or out), the call-back is called.
+  printf("Pair controllers now, and then press start.\n");
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
@@ -310,7 +313,7 @@ void myButton_isr() {
   cancel_blinking();                             // turn off last stages heartbeat
   start_blinking(0.5, "blue");                   // change LED color to signify next state
   Queue1.call(sendMessage, "Init complete\n");   // output to console
-  Queue1.call_every(10,game);                    // start up the game after button press
+  Queue1.call_every(5,game);                    // start up the game after button press
   }
 
 
