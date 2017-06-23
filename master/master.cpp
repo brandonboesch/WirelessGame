@@ -18,6 +18,8 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
+#define ANGLE_DIV 0.0245                // PI / 128 pixels = 0.0245
+#define PADLE_SIZE 20                   // length of player's padle
 
 // ****** ST7735 Interface ******************************************
 //
@@ -82,13 +84,12 @@ float Slave2_OldPixel = 0;
 // output: none
 // ***************************************************************
 void game(void){
-
-  TFT.drawPixel(30, Slave1_OldPixel, ST7735_GREEN);   // erase old pixel pos
-  TFT.drawPixel(140, Slave2_OldPixel, ST7735_GREEN);  // erase old pixel pos
-  float pixel1 = 128 - (abs(Slave1_Angle) / 0.0245);  // translate angle to pixel location
-  float pixel2 = 128 - (abs(Slave2_Angle) / 0.0245);  // translate angle to pixel location
-  TFT.drawPixel(30, pixel1, ST7735_BLACK);            // draw new pixel
-  TFT.drawPixel(140, pixel2, ST7735_BLACK);           // draw new pixel
+  TFT.drawFastVLine(10, Slave1_OldPixel, PADLE_SIZE, ST7735_GREEN);
+  TFT.drawFastVLine(150, Slave2_OldPixel, PADLE_SIZE, ST7735_GREEN);
+  float pixel1 = 128-(abs(Slave1_Angle)/ANGLE_DIV);   // translate angle to pixel location
+  float pixel2 = 128-(abs(Slave2_Angle)/ANGLE_DIV);   // translate angle to pixel location
+  TFT.drawFastVLine(10, pixel1, PADLE_SIZE, ST7735_BLACK);
+  TFT.drawFastVLine(150, pixel2, PADLE_SIZE, ST7735_BLACK);
   Slave1_OldPixel = pixel1;                           // update old pixel
   Slave2_OldPixel = pixel2;                           // update old pixel
 }
