@@ -112,25 +112,24 @@ int main(void){
   // setup the display
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
-  TFT.fillScreen(ST7735_GREEN);
-  TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
-  TFT.drawCircle(80, 64, 10, ST7735_BLACK);
-
-  TFT.setCursor(0,0);
-  TFT.drawString(0, 0, (unsigned char*)("testing"), ST7735_WHITE, ST7735_BLACK, 1);
+  TFT.fillScreen(ST7735_BLACK);
+  TFT.drawString(45, 10, (unsigned char*)("PONG"), ST7735_YELLOW, ST7735_BLACK, 3);
 
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
+  TFT.drawString(0, 40, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);
   mesh.initialize(&rf_phy);
   int error=-1;
   if((error=mesh.connect())){
     printf("Connection failed! %d\n", error);
+    TFT.drawString(80, 40, (unsigned char*)("Failed!"), ST7735_RED, ST7735_BLACK, 1);
     return error;
   }
   while(NULL == mesh.get_ip_address()){
     Thread::wait(500);
   }
   printf("connected. IP = %s\n", mesh.get_ip_address());
+  TFT.drawString(80, 40, (unsigned char*)("Success!"), ST7735_GREEN, ST7735_BLACK, 1);
   cancel_blinking();
   start_blinking(0.5, "green");
  
@@ -146,6 +145,8 @@ int main(void){
 
   // if something happens in socket (packets in or out), the call-back is called.
   printf("Pair controllers now, and then press start.\n");
+  TFT.drawString(0, 50, (unsigned char*)("Pair controllers now, and"), ST7735_WHITE, ST7735_BLACK, 1);
+  TFT.drawString(0, 60, (unsigned char*)("then press start."), ST7735_WHITE, ST7735_BLACK, 1);
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
@@ -248,22 +249,27 @@ void pairSlaves() {
       // Slave1
       if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave1 assigned\n");
+        TFT.drawString(0, 80, (unsigned char*)("--Player 1 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave1_Addr = source_addr;
 
       // Slave2
       }
       else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave2 assigned\n");
+        TFT.drawString(0, 90, (unsigned char*)("--Player 2 paired"), ST7735_WHITE, ST7735_BLACK, 1);
+
         Slave2_Addr = source_addr;
       }
 
       // Slave3
       else if(Slave3_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave4_Addr){
         printf("Slave3 assigned\n");
+        TFT.drawString(0, 100, (unsigned char*)("--Player 3 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave3_Addr = source_addr;
       }
       // Slave4
       else if(Slave4_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave3_Addr){
+       TFT.drawString(0, 110, (unsigned char*)("--Player 4 paired"), ST7735_WHITE, ST7735_BLACK, 1); 
         printf("Slave4 assigned\n");
         Slave4_Addr = source_addr;
       }
@@ -313,8 +319,11 @@ void myButton_isr() {
   cancel_blinking();                             // turn off last stages heartbeat
   start_blinking(0.5, "blue");                   // change LED color to signify next state
   Queue1.call(sendMessage, "Init complete\n");   // output to console
-  Queue1.call_every(5,game);                    // start up the game after button press
-  }
+  TFT.fillScreen(ST7735_GREEN);
+  TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
+  TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+  Queue1.call_every(5,game);                     // start up the game after button press
+}
 
 
 // ******** socket_isr()******************************************

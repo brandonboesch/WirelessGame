@@ -390,6 +390,8 @@ int Adafruit_GFX::_getc() {
 // draw a string
 void Adafruit_GFX::drawString(int16_t x, int16_t y,unsigned char *pt, 
                               uint16_t color, uint16_t bg, uint8_t size){
+  this->cursor_x = x;
+  this->cursor_y = y;
   this->textcolor = color;
   this->textbgcolor = bg;
   this->textsize = size;
