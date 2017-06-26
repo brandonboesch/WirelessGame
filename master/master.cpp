@@ -2,24 +2,6 @@
 // Built by: Brandon Boesch
 // Date    : June 12th, 2017
 
-#include "mbed.h"
-#include "master.h"
-#include "ip6string.h"
-#include "NanostackInterface.h"
-#include "NanostackRfPhyAtmel.h"
-#include "nanostack/socket_api.h"
-#include "mbed-trace/mbed_trace.h"
-#include "led.h"
-#include "Adafruit_ST7735.h"
-#include "bmp.h"
-
-#define TRACE_GROUP "masterComms"
-#define MULTICAST_ADDR_STR "ff03::1"
-#define UDP_PORT 1234
-#define IP_LAST4_OFFSET 35
-#define MAX_NUM_SLAVES 4
-#define ANGLE_DIV 0.0245                // PI / 128 pixels = 0.0245
-#define PADDLE_SIZE 20                  // length of player's paddle
 
 // ****** ST7735 Interface ******************************************
 //
@@ -40,6 +22,25 @@
 //   Bottom right = (159, 127)
 
 // ******************************************************************
+
+#include "mbed.h"
+#include "master.h"
+#include "ip6string.h"
+#include "NanostackInterface.h"
+#include "NanostackRfPhyAtmel.h"
+#include "nanostack/socket_api.h"
+#include "mbed-trace/mbed_trace.h"
+#include "led.h"
+#include "Adafruit_ST7735.h"
+#include "bmp.h"
+
+#define TRACE_GROUP "masterComms"
+#define MULTICAST_ADDR_STR "ff03::1"
+#define UDP_PORT 1234
+#define IP_LAST4_OFFSET 35
+#define MAX_NUM_SLAVES 4
+#define ANGLE_DIV 0.0245                // PI / 128 pixels = 0.0245
+#define PADDLE_SIZE 20                  // length of player's paddle
 
 
 // ******************** GLOBALS *************************************
@@ -66,10 +67,12 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
-float Slave1_OldPixel = 0;
+float Slave1_OldPixel = 0;                  
+int8_t Slave1_Score = 0;                    // Slave1's score
 
 float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
 float Slave2_OldPixel = 0;
+int8_t Slave2_Score = 0;                    // Slave2's score
 
 
 // ******************************************************************
@@ -92,6 +95,7 @@ void game(void){
   TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);
   Slave1_OldPixel = pixel1;                           // update old pixel
   Slave2_OldPixel = pixel2;                           // update old pixel
+
 }
 
 
@@ -315,14 +319,24 @@ void trace_printer(const char* str){
 // output: none
 // ***************************************************************
 void myButton_isr() {
-  Init_Mode = false;                             // finishing initilization mode
-  cancel_blinking();                             // turn off last stages heartbeat
-  start_blinking(0.5, "blue");                   // change LED color to signify next state
-  Queue1.call(sendMessage, "Init complete\n");   // output to console
-  TFT.fillScreen(ST7735_GREEN);
-  TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
-  TFT.drawCircle(80, 64, 10, ST7735_BLACK);
-  Queue1.call_every(5,game);                     // start up the game after button press
+  if(Init_Mode){
+    Init_Mode = false;                             // finishing initilization mode
+    cancel_blinking();                             // turn off last stages heartbeat
+    start_blinking(0.5, "blue");                   // change LED color to signify next state
+    Queue1.call(sendMessage, "Init complete\n");   // output to console
+    TFT.fillScreen(ST7735_GREEN);
+    TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
+    TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+    char buff[8];
+    itoa(Slave1_Score,buff,10);
+    TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+    itoa(Slave2_Score,buff,10);
+    TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
+    Queue1.call_every(10,game);                     // start up the game after button press
+  }
+  else{
+    Queue1.call(sendMessage, "button press\n");
+  }
 }
 
 
