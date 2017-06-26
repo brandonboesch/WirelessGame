@@ -74,6 +74,12 @@ float Slave2_Angle = 0;                     // latest angle stored in system for
 float Slave2_OldPixel = 0;
 int8_t Slave2_Score = 0;                    // Slave2's score
 
+int8_t Ball_Position_X = 0;
+int8_t Ball_Position_Y = 0;
+
+int8_t Old_Ball_Position_X = 0;
+int8_t Old_Ball_Position_Y = 0;
+
 
 // ******************************************************************
 
@@ -89,12 +95,15 @@ int8_t Slave2_Score = 0;                    // Slave2's score
 void game(void){
   TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);
   TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);
+  TFT.drawPixel(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);
   float pixel1 = 128-(abs(Slave1_Angle)/ANGLE_DIV);   // translate angle to pixel location
   float pixel2 = 128-(abs(Slave2_Angle)/ANGLE_DIV);   // translate angle to pixel location
   TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);
+  TFT.drawPixel(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);
   TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);
   Slave1_OldPixel = pixel1;                           // update old pixel
   Slave2_OldPixel = pixel2;                           // update old pixel
+  Old_Ball_Position_Y = pixel1;
 
 }
 
