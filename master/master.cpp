@@ -39,8 +39,12 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
-#define ANGLE_DIV 0.0245                // PI / 128 pixels = 0.0245
-#define PADDLE_SIZE 20                  // length of player's paddle
+#define SCREEN_LEN_SHORT 128
+#define SCREEN_LEN_LONG 160
+#define ANGLE_DIV 0.0291             // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291
+//#define ANGLE_DIV 0.0245           // PI / SCREEN_LENGTH_SHORT pixels = 0.0245
+#define PADDLE_SIZE 20               // length of player's paddle
+#define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 
 
 // ******************** GLOBALS *************************************
@@ -67,11 +71,11 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
-float Slave1_OldPixel = 0;                  
+int8_t Slave1_OldPixel = 0;                  
 int8_t Slave1_Score = 0;                    // Slave1's score
 
 float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
-float Slave2_OldPixel = 0;
+int8_t Slave2_OldPixel = 0;
 int8_t Slave2_Score = 0;                    // Slave2's score
 
 int8_t Ball_Position_X = 0;
@@ -93,18 +97,22 @@ int8_t Old_Ball_Position_Y = 0;
 // output: none
 // ***************************************************************
 void game(void){
+  //erase old ojects on screen
   TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);
   TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);
   TFT.drawPixel(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);
-  float pixel1 = 128-(abs(Slave1_Angle)/ANGLE_DIV);   // translate angle to pixel location
-  float pixel2 = 128-(abs(Slave2_Angle)/ANGLE_DIV);   // translate angle to pixel location
+
+  // calculate and draw new object locations
+  float pixel1 = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);       // translate angle to pixel location
+  float pixel2 = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);       // translate angle to pixel location
   TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);
   TFT.drawPixel(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);
   TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);
-  Slave1_OldPixel = pixel1;                           // update old pixel
-  Slave2_OldPixel = pixel2;                           // update old pixel
-  Old_Ball_Position_Y = pixel1;
 
+  // update objects' old values
+  Slave1_OldPixel = pixel1;                                             // update Slave1's old pixel
+  Slave2_OldPixel = pixel2;                                             // update old pixel
+  Old_Ball_Position_Y = pixel1;                                         // update ball's old position
 }
 
 
