@@ -210,6 +210,19 @@ void Adafruit_GFX::drawRect(int16_t x, int16_t y,
   drawFastVLine(x+w-1, y, h, color);
 }
 
+// draw a 2x2 ball for pong
+void Adafruit_GFX::drawBall(int16_t x, int16_t y, uint16_t color){
+  drawPixel(x,y,color);
+  drawPixel(x,y+1,color);
+  drawPixel(x,y+2,color);
+  drawPixel(x+1,y,color);
+  drawPixel(x+1,y+1,color);
+  drawPixel(x+1,y+2,color);
+  drawPixel(x+2,y,color);
+  drawPixel(x+2,y+1,color);
+  drawPixel(x+2,y+2,color);
+}
+
 void Adafruit_GFX::drawFastVLine(int16_t x, int16_t y, 
                  int16_t h, uint16_t color) {
   // stupidest version - update in subclasses if desired!

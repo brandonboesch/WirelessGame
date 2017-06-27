@@ -39,11 +39,11 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
-#define SCREEN_LEN_SHORT 128
-#define SCREEN_LEN_LONG 160
-#define ANGLE_DIV 0.0291             // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291
-//#define ANGLE_DIV 0.0245           // PI / SCREEN_LENGTH_SHORT pixels = 0.0245
-#define PADDLE_SIZE 20               // length of player's paddle
+#define SCREEN_LEN_SHORT 128         // number of pixels on short dimension of screen
+#define SCREEN_LEN_LONG 160          // number of pixels on long dimension of screen
+//#define ANGLE_DIV 0.0291           // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
+#define ANGLE_DIV 0.0293             // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 21
+#define PADDLE_SIZE 21               // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 
 
@@ -64,7 +64,6 @@ SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
 Adafruit_ST7735 TFT(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
 
-
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
@@ -83,8 +82,6 @@ int8_t Ball_Position_Y = 0;
 
 int8_t Old_Ball_Position_X = 0;
 int8_t Old_Ball_Position_Y = 0;
-
-
 // ******************************************************************
 
 
@@ -97,17 +94,17 @@ int8_t Old_Ball_Position_Y = 0;
 // output: none
 // ***************************************************************
 void game(void){
-  //erase old ojects on screen
-  TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);
-  TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);
-  TFT.drawPixel(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);
+  //erase old objects on screen
+  TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
+  TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
+  TFT.drawBall(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);  // erase Ball
 
   // calculate and draw new object locations
   float pixel1 = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);       // translate angle to pixel location
   float pixel2 = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);       // translate angle to pixel location
-  TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);
-  TFT.drawPixel(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);
-  TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);
+  TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);             // draw Slave1's paddle
+  TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);            // draw Slave2's paddle
+  TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball
 
   // update objects' old values
   Slave1_OldPixel = pixel1;                                             // update Slave1's old pixel
