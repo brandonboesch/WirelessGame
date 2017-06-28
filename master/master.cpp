@@ -41,9 +41,9 @@
 #define MAX_NUM_SLAVES 4
 #define SCREEN_LEN_SHORT 128         // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160          // number of pixels on long dimension of screen
-//#define ANGLE_DIV 0.0291           // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
-#define ANGLE_DIV 0.0293             // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 21
-#define PADDLE_SIZE 21               // length of player's paddle. Update ANGLE_DIV if changes.
+#define ANGLE_DIV 0.0291           // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
+//#define ANGLE_DIV 0.0293             // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0293 when paddle = 21
+#define PADDLE_SIZE 20               // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 
 
@@ -63,6 +63,8 @@ SocketAddress Slave3_Addr = NULL;           // address for slave 3
 SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
 Adafruit_ST7735 TFT(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // MOSI, MISO, SCK, TFT_CS, D/C, RESET
+
+Mutex stdio_mutex;
 
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
@@ -107,9 +109,12 @@ void game(void){
   TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball
 
   // update objects' old values
+  stdio_mutex.lock();
   Slave1_OldPixel = pixel1;                                             // update Slave1's old pixel
   Slave2_OldPixel = pixel2;                                             // update old pixel
   Old_Ball_Position_Y = pixel1;                                         // update ball's old position
+  printf("Slave1_OldPixel: %d, Slave1_Angle: %.2f\n", Slave1_OldPixel, Slave1_Angle);
+  stdio_mutex.unlock();
 }
 
 
@@ -210,7 +215,9 @@ void receiveMessage() {
         int segmentIndex = 0;                       // segment # in string
         while (segment != NULL){
           if(segmentIndex == 1){                    // grab value for angle here
+            stdio_mutex.lock();
             Slave1_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+            stdio_mutex.unlock();
           }
           segment = strtok(NULL, " = ");            // advances segment for next iteration
           segmentIndex++;                           // next segment
@@ -226,7 +233,9 @@ void receiveMessage() {
         int segmentIndex = 0;                       // segment # in string
         while (segment != NULL){
           if(segmentIndex == 1){                    // grab value for angle here
+            stdio_mutex.lock();
             Slave2_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+            stdio_mutex.unlock();
           }
           segment = strtok(NULL, " = ");            // advances segment for next iteration
           segmentIndex++;                           // next segment
