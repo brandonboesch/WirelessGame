@@ -100,8 +100,10 @@ void game(void){
   TFT.drawBall(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);  // erase Ball
 
   // calculate and draw new object locations
+  core_util_critical_section_enter();                                   // entering critical section
   float pixel1 = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);       // translate angle to pixel location
   float pixel2 = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);       // translate angle to pixel location
+  core_util_critical_section_exit();                                    // entering critical section
   TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);             // draw Slave1's paddle
   TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);            // draw Slave2's paddle
   TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball
@@ -198,6 +200,7 @@ void receiveMessage() {
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
+      core_util_critical_section_enter();           // entering critical section
       printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
 
       // need to update the slaves' current angles based off their transmission data
@@ -234,6 +237,7 @@ void receiveMessage() {
           segmentIndex++;                           // next segment
         }
       }
+      core_util_critical_section_exit();            // exiting critical section
     }
 
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
@@ -348,7 +352,7 @@ void myButton_isr() {
     TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
     itoa(Slave2_Score,buff,10);
     TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
-    Queue1.call_every(10,game);                     // start up the game after button press
+    Queue1.call_every(10,game);                     // game to run at specificed freq after button press
   }
   else{
     Queue1.call(sendMessage, "button press\n");
