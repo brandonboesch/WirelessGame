@@ -54,6 +54,9 @@
 #define STILL 2                  // enum for path directions
 
 
+#define LEFT_SCOREBOARD 0
+#define RIGHT_SCOREBOARD 155
+
 // ******************** GLOBALS *************************************
 NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
                            ATMEL_SPI_RST, ATMEL_SPI_SLP, ATMEL_SPI_IRQ, ATMEL_I2C_SDA, 
@@ -121,7 +124,7 @@ void game(void){
     Ball_Position_X--;
   }
 
-  // check if the ball reached the barrier on the right side of the screen
+  // check if the ball reached the barrier on the right side of the screen // TODO make sure below is similar for both cases
   if(Ball_Position_X == SCREEN_LEN_LONG-10){
 
     // if the ball hit the paddle
@@ -135,10 +138,19 @@ void game(void){
       Ball_Position_X = SCREEN_LEN_LONG-10;
       Ball_Position_Y = SCREEN_LEN_SHORT/2;
       Ball_Path = STILL;
+
+      // update score
+      Slave1_Score++;
+      char buff[8];
+      itoa(Slave1_Score,buff,10);           
+      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      if(Slave1_Score >= MAX_SCORE){
+        // Slave1 wins
+      }
     }
   }
 
-  // else if the ball reached the barrier on the left side of the screen 
+  // else if the ball reached the barrier on the left side of the screen // TODO make sure above is similar for both cases
   else if(Ball_Position_X == 10){
     // if the ball hit the paddle
     if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
@@ -151,30 +163,15 @@ void game(void){
       Ball_Position_X = 10;
       Ball_Position_Y = SCREEN_LEN_SHORT/2;
       Ball_Path = STILL;
-    }
-  }
 
-  // check for score/win condition
-  if(Ball_Position_X > SCREEN_LEN_LONG-10){                                 // if Slave1 scored a point
-    // halt the ball.
-
-
-    Slave1_Score++;
-    char buff[8];
-    itoa(Slave1_Score,buff,10);           
-    TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-    if(Slave1_Score >= MAX_SCORE){
-      // Slave1 wins
-    }
-  }
-  
-  else if(Ball_Position_X < 10){                                            // if Slave3 scored a point
-    Slave2_Score++;
-    char buff[8];
-    itoa(Slave2_Score,buff,10);
-    TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);
-    if(Slave2_Score >= MAX_SCORE){
-      // Slave2 wins
+      // update score
+      Slave2_Score++;
+      char buff[8];
+      itoa(Slave2_Score,buff,10);           
+      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      if(Slave2_Score >= MAX_SCORE){
+        // Slave2 wins
+      }
     }
   }
 
@@ -423,9 +420,9 @@ void myButton_isr() {
     // draw the score board
     char buff[8];
     itoa(Slave1_Score,buff,10);           
-    TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+    TFT.drawString(LEFT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
     itoa(Slave2_Score,buff,10);
-    TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
+    TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
 
     // specify rate to rerun game() after button press. The higher the value of GAME_CALL_RATE, the slower the game will runs.
     Queue1.call_every(GAME_CALL_RATE,game);   
