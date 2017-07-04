@@ -39,12 +39,16 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
+#define MAX_SCORE 5
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 //#define ANGLE_DIV 0.0293       // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0293 when paddle = 21
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
+
+#define RIGHT 1                  // enum for path directions
+#define LEFT 0                   // enum for path directions
 
 
 // ******************** GLOBALS *************************************
@@ -77,16 +81,17 @@ float Slave2_Angle = 0;                     // latest angle stored in system for
 int8_t Slave2_OldPixel = 0;
 int8_t Slave2_Score = 0;                    // Slave2's score
 
-int8_t Ball_Position_X = 0;
-int8_t Ball_Position_Y = 0;
+uint8_t Ball_Position_X = 11;
+uint8_t Ball_Position_Y = SCREEN_LEN_SHORT/2;
 
-int8_t Old_Ball_Position_X = 0;
-int8_t Old_Ball_Position_Y = 0;
+uint8_t Old_Ball_Position_X = Ball_Position_X;
+uint8_t Old_Ball_Position_Y = Ball_Position_Y;
+
+uint8_t Ball_Path = RIGHT;
 // ******************************************************************
 
 
-// ****************** FUNCTIONS *************************************
-
+// ****************** FUNCTIONS ***********************************
 
 // ******** game()************************************************
 // about:  A thread which handles all things related to the game
@@ -97,19 +102,59 @@ void game(void){
   //erase old objects on screen
   TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
   TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
-  TFT.drawBall(11, Old_Ball_Position_Y+(PADDLE_SIZE/2), ST7735_GREEN);  // erase Ball
+  TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
 
   // calculate and draw new object locations
   float pixel1 = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);       // translate angle to pixel location
   float pixel2 = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);       // translate angle to pixel location
   TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);             // draw Slave1's paddle
   TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);            // draw Slave2's paddle
-  TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball
+
+  // calculate x trajectory for ball
+  if(Ball_Path == RIGHT){
+    Ball_Position_X++;
+  }
+  else if(Ball_Path == LEFT){
+    Ball_Position_X--;
+  }
+
+  if(Ball_Position_X == SCREEN_LEN_LONG-10){
+    Ball_Path = LEFT;
+  }
+  else if(Ball_Position_X == 10){
+    Ball_Path = RIGHT;
+  }
+
+  // check for score/win condition
+  if(Ball_Position_X > SCREEN_LEN_LONG-10){
+    Slave1_Score++;
+    char buff[8];
+    itoa(Slave1_Score,buff,10);           
+    TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+    if(Slave1_Score >= MAX_SCORE){
+      // Slave1 wins
+    }
+  }
+  
+  else if(Ball_Position_X < 10){
+    Slave2_Score++;
+    char buff[8];
+    itoa(Slave2_Score,buff,10);
+    TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);
+    if(Slave2_Score >= MAX_SCORE){
+      // Slave2 wins
+    }
+  }
+
+  // draw the ball
+  TFT.drawBall(Ball_Position_X, Ball_Position_Y, ST7735_RED);
+  //TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball on center of paddle
 
   // update objects' old values
   Slave1_OldPixel = pixel1;                                             // update Slave1's old pixel
   Slave2_OldPixel = pixel2;                                             // update old pixel
-  Old_Ball_Position_Y = pixel1;                                         // update ball's old position
+  Old_Ball_Position_X = Ball_Position_X;                                // update ball's old x position
+  Old_Ball_Position_Y = Ball_Position_Y;                                // update ball's old y position
 }
 
 
@@ -338,15 +383,21 @@ void myButton_isr() {
     cancel_blinking();                             // turn off last stages heartbeat
     start_blinking(0.5, "blue");                   // change LED color to signify next state
     Queue1.call(sendMessage, "Init complete\n");   // output to console
+
+    // draw the field
     TFT.fillScreen(ST7735_GREEN);
     TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
     TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+
+    // draw the score board
     char buff[8];
-    itoa(Slave1_Score,buff,10);
+    itoa(Slave1_Score,buff,10);           
     TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
     itoa(Slave2_Score,buff,10);
     TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
-    Queue1.call_every(10,game);                     // game to run at specificed freq after button press
+
+    // game to run at specificed freq after button press
+    Queue1.call_every(10,game);   
   }
   else{
     Queue1.call(sendMessage, "button press\n");
