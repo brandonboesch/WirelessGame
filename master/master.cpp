@@ -127,12 +127,12 @@ void game(void){
   // check if the ball reached the barrier on the right side of the screen // TODO make sure below is similar for both cases
   if(Ball_Position_X == SCREEN_LEN_LONG-10){
 
-    // if the ball hit the paddle
+    // if the ball hit the right paddle
     if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Path = LEFT;
     }
 
-    // else if the ball scored a goal
+    // else if the ball scored a goal on right side of screen
     else{
       // place ball in center of right side of screen
       Ball_Position_X = SCREEN_LEN_LONG-10;
@@ -143,7 +143,7 @@ void game(void){
       Slave1_Score++;
       char buff[8];
       itoa(Slave1_Score,buff,10);           
-      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
       if(Slave1_Score >= MAX_SCORE){
         // Slave1 wins
       }
@@ -152,12 +152,12 @@ void game(void){
 
   // else if the ball reached the barrier on the left side of the screen // TODO make sure above is similar for both cases
   else if(Ball_Position_X == 10){
-    // if the ball hit the paddle
+    // if the ball hit the left paddle
     if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Path = RIGHT;
     }
 
-    // else if the ball scored a goal
+    // else if the ball scored a goal on the left side of screen
     else{
       // place ball in center of right side of screen
       Ball_Position_X = 10;
@@ -168,7 +168,7 @@ void game(void){
       Slave2_Score++;
       char buff[8];
       itoa(Slave2_Score,buff,10);           
-      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
       if(Slave2_Score >= MAX_SCORE){
         // Slave2 wins
       }
