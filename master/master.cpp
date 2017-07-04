@@ -40,6 +40,7 @@
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
 #define MAX_SCORE 5
+#define GAME_CALL_RATE 15        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
@@ -47,8 +48,10 @@
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 
-#define RIGHT 1                  // enum for path directions
+
 #define LEFT 0                   // enum for path directions
+#define RIGHT 1                  // enum for path directions
+#define STILL 2                  // enum for path directions
 
 
 // ******************** GLOBALS *************************************
@@ -110,7 +113,7 @@ void game(void){
   TFT.drawFastVLine(10, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);        // draw Slave1's paddle
   TFT.drawFastVLine(150, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK);       // draw Slave2's paddle
 
-  // calculate x trajectory for ball
+  // calculate ball's current x trajectory
   if(Ball_Path == RIGHT){
     Ball_Position_X++;
   }
@@ -118,29 +121,37 @@ void game(void){
     Ball_Position_X--;
   }
 
-  // if the ball reached the barrier on the right side of the screen
+  // check if the ball reached the barrier on the right side of the screen
   if(Ball_Position_X == SCREEN_LEN_LONG-10){
 
-    // if the ball hits the paddle
+    // if the ball hit the paddle
     if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Path = LEFT;
     }
 
-    // else if the ball scores a goal
+    // else if the ball scored a goal
     else{
-      // place ball in center of screen
-
+      // place ball in center of right side of screen
+      Ball_Position_X = SCREEN_LEN_LONG-10;
+      Ball_Position_Y = SCREEN_LEN_SHORT/2;
+      Ball_Path = STILL;
     }
-
   }
 
   // else if the ball reached the barrier on the left side of the screen 
   else if(Ball_Position_X == 10){
+    // if the ball hit the paddle
     if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Path = RIGHT;
     }
 
-    // TODO, this needs to match for the case that the ball is on right side of the screem above
+    // else if the ball scored a goal
+    else{
+      // place ball in center of right side of screen
+      Ball_Position_X = 10;
+      Ball_Position_Y = SCREEN_LEN_SHORT/2;
+      Ball_Path = STILL;
+    }
   }
 
   // check for score/win condition
@@ -416,8 +427,10 @@ void myButton_isr() {
     itoa(Slave2_Score,buff,10);
     TFT.drawString(155, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
 
-    // game to run at specificed freq after button press
-    Queue1.call_every(10,game);   
+    // specify rate to rerun game() after button press. The higher the value of GAME_CALL_RATE, the slower the game will runs.
+    Queue1.call_every(GAME_CALL_RATE,game);   
+    // Queue1.call_every(10,game); 
+    
   }
   else{
     Queue1.call(sendMessage, "button press\n");
