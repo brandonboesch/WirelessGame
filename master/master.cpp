@@ -81,11 +81,11 @@ bool Init_Mode = true;                      // determines wheter in init mode or
 
 float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
 int8_t Slave1_Old_Paddle_Top = 0;           // top pixel for slave1's previous paddle              
-int8_t Slave1_Score = 0;                    // Slave1's score
+uint8_t Slave1_Score = 0;                   // Slave1's score
 
 float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
 int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
-int8_t Slave2_Score = 0;                    // Slave2's score
+uint8_t Slave2_Score = 0;                   // Slave2's score
 
 uint8_t Ball_Position_X = 11;
 uint8_t Ball_Position_Y = SCREEN_LEN_SHORT/2;
