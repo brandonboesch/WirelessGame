@@ -47,15 +47,16 @@
 //#define ANGLE_DIV 0.0293       // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0293 when paddle = 21
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
+#define BARRIER_RIGHT (SCREEN_LEN_LONG-10)  // boundary on the right side of screen
+#define BARRIER_LEFT 10                     // boundary on the left side of screen
+#define LEFT_SCOREBOARD 0        // X coordinate for Slave1's scoreboard
+#define RIGHT_SCOREBOARD 155     // X coordinate for Slave2's scoreboard
+
+#define LEFT 0                   // enum for ball's directions
+#define RIGHT 1                  // enum for ball's directions
+#define STILL 2                  // enum for ball's directions
 
 
-#define LEFT 0                   // enum for path directions
-#define RIGHT 1                  // enum for path directions
-#define STILL 2                  // enum for path directions
-
-
-#define LEFT_SCOREBOARD 0
-#define RIGHT_SCOREBOARD 155
 
 // ******************** GLOBALS *************************************
 NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
@@ -87,13 +88,13 @@ float Slave2_Angle = 0;                     // latest angle stored in system for
 int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
-uint8_t Ball_Position_X = 11;
-uint8_t Ball_Position_Y = SCREEN_LEN_SHORT/2;
+uint8_t Ball_Position_X = 11;                   // current X coordinate for the ball
+uint8_t Ball_Position_Y = SCREEN_LEN_SHORT/2;   // current Y coordinate for the ball
 
-uint8_t Old_Ball_Position_X = Ball_Position_X;
-uint8_t Old_Ball_Position_Y = Ball_Position_Y;
+uint8_t Old_Ball_Position_X = Ball_Position_X;  // ball's previous X coordinate
+uint8_t Old_Ball_Position_Y = Ball_Position_Y;  // ball's previous Y coordinate
 
-uint8_t Ball_Path = RIGHT;
+uint8_t Ball_Path = RIGHT;                   // direction that ball is currently traveling
 // ******************************************************************
 
 
@@ -106,15 +107,15 @@ uint8_t Ball_Path = RIGHT;
 // ***************************************************************
 void game(void){
   //erase old objects on screen
-  TFT.drawFastVLine(10, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
-  TFT.drawFastVLine(150, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
+  TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
+  TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
   TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
 
   // calculate and draw new object locations
   float slave1_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);  // translate angle to pixel location
   float slave2_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);  // translate angle to pixel location
-  TFT.drawFastVLine(10, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);        // draw Slave1's paddle
-  TFT.drawFastVLine(150, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK);       // draw Slave2's paddle
+  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);        // draw Slave1's paddle
+  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK);       // draw Slave2's paddle
 
   // calculate ball's current x trajectory
   if(Ball_Path == RIGHT){
@@ -125,7 +126,7 @@ void game(void){
   }
 
   // check if the ball reached the barrier on the right side of the screen // TODO make sure below is similar for both cases
-  if(Ball_Position_X == SCREEN_LEN_LONG-10){
+  if(Ball_Position_X == BARRIER_RIGHT){
 
     // if the ball hit the right paddle
     if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
@@ -135,7 +136,7 @@ void game(void){
     // else if the ball scored a goal on right side of screen
     else{
       // place ball in center of right side of screen
-      Ball_Position_X = SCREEN_LEN_LONG-10;
+      Ball_Position_X = BARRIER_RIGHT;
       Ball_Position_Y = SCREEN_LEN_SHORT/2;
       Ball_Path = STILL;
 
@@ -151,7 +152,7 @@ void game(void){
   }
 
   // else if the ball reached the barrier on the left side of the screen // TODO make sure above is similar for both cases
-  else if(Ball_Position_X == 10){
+  else if(Ball_Position_X == BARRIER_LEFT){
     // if the ball hit the left paddle
     if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Path = RIGHT;
@@ -160,7 +161,7 @@ void game(void){
     // else if the ball scored a goal on the left side of screen
     else{
       // place ball in center of right side of screen
-      Ball_Position_X = 10;
+      Ball_Position_X = BARRIER_LEFT;
       Ball_Position_Y = SCREEN_LEN_SHORT/2;
       Ball_Path = STILL;
 
@@ -424,10 +425,8 @@ void myButton_isr() {
     itoa(Slave2_Score,buff,10);
     TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
 
-    // specify rate to rerun game() after button press. The higher the value of GAME_CALL_RATE, the slower the game will runs.
+    // specify rate to rerun game() after button press. 
     Queue1.call_every(GAME_CALL_RATE,game);   
-    // Queue1.call_every(10,game); 
-    
   }
   else{
     Queue1.call(sendMessage, "button press\n");
