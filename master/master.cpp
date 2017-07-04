@@ -74,11 +74,11 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
-int8_t Slave1_OldPixel = 0;                  
+int8_t Slave1_Old_Paddle_Top = 0;           // top pixel for slave1's previous paddle              
 int8_t Slave1_Score = 0;                    // Slave1's score
 
 float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
-int8_t Slave2_OldPixel = 0;
+int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
 int8_t Slave2_Score = 0;                    // Slave2's score
 
 uint8_t Ball_Position_X = 11;
@@ -100,15 +100,15 @@ uint8_t Ball_Path = RIGHT;
 // ***************************************************************
 void game(void){
   //erase old objects on screen
-  TFT.drawFastVLine(10, Slave1_OldPixel, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
-  TFT.drawFastVLine(150, Slave2_OldPixel, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
+  TFT.drawFastVLine(10, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
+  TFT.drawFastVLine(150, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
   TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
 
   // calculate and draw new object locations
-  float pixel1 = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);       // translate angle to pixel location
-  float pixel2 = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);       // translate angle to pixel location
-  TFT.drawFastVLine(10, pixel1, PADDLE_SIZE, ST7735_BLACK);             // draw Slave1's paddle
-  TFT.drawFastVLine(150, pixel2, PADDLE_SIZE, ST7735_BLACK);            // draw Slave2's paddle
+  float slave1_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);  // translate angle to pixel location
+  float slave2_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);  // translate angle to pixel location
+  TFT.drawFastVLine(10, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);        // draw Slave1's paddle
+  TFT.drawFastVLine(150, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK);       // draw Slave2's paddle
 
   // calculate x trajectory for ball
   if(Ball_Path == RIGHT){
@@ -118,15 +118,36 @@ void game(void){
     Ball_Position_X--;
   }
 
+  // if the ball reached the barrier on the right side of the screen
   if(Ball_Position_X == SCREEN_LEN_LONG-10){
-    Ball_Path = LEFT;
+
+    // if the ball hits the paddle
+    if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
+      Ball_Path = LEFT;
+    }
+
+    // else if the ball scores a goal
+    else{
+      // place ball in center of screen
+
+    }
+
   }
+
+  // else if the ball reached the barrier on the left side of the screen 
   else if(Ball_Position_X == 10){
-    Ball_Path = RIGHT;
+    if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
+      Ball_Path = RIGHT;
+    }
+
+    // TODO, this needs to match for the case that the ball is on right side of the screem above
   }
 
   // check for score/win condition
-  if(Ball_Position_X > SCREEN_LEN_LONG-10){
+  if(Ball_Position_X > SCREEN_LEN_LONG-10){                                 // if Slave1 scored a point
+    // halt the ball.
+
+
     Slave1_Score++;
     char buff[8];
     itoa(Slave1_Score,buff,10);           
@@ -136,7 +157,7 @@ void game(void){
     }
   }
   
-  else if(Ball_Position_X < 10){
+  else if(Ball_Position_X < 10){                                            // if Slave3 scored a point
     Slave2_Score++;
     char buff[8];
     itoa(Slave2_Score,buff,10);
@@ -148,11 +169,10 @@ void game(void){
 
   // draw the ball
   TFT.drawBall(Ball_Position_X, Ball_Position_Y, ST7735_RED);
-  //TFT.drawBall(11, pixel1+(PADDLE_SIZE/2), ST7735_RED);                 // draw the pong ball on center of paddle
 
   // update objects' old values
-  Slave1_OldPixel = pixel1;                                             // update Slave1's old pixel
-  Slave2_OldPixel = pixel2;                                             // update old pixel
+  Slave1_Old_Paddle_Top = slave1_paddle_top;                            // update Slave1's old pixel
+  Slave2_Old_Paddle_Top = slave2_paddle_top;                            // update old pixel
   Old_Ball_Position_X = Ball_Position_X;                                // update ball's old x position
   Old_Ball_Position_Y = Ball_Position_Y;                                // update ball's old y position
 }
@@ -176,7 +196,7 @@ int main(void){
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
   TFT.fillScreen(ST7735_BLACK);
-  TFT.drawString(45, 10, (unsigned char*)("PONG"), ST7735_YELLOW, ST7735_BLACK, 3);
+  TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
 
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
