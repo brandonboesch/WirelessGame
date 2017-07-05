@@ -19,7 +19,7 @@
 #define UDP_PORT 1234
 #define DATA_ARRAY_SIZE 20
 #define DATA_COLLECT_RATE 0.01
-#define IP_LAST4_OFFSET 35
+#define IP_LAST4_OFFSET 18
 
 // ******************** GLOBALS *************************************
 NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
@@ -32,7 +32,6 @@ EventQueue Queue1;                          // queue for sending messages from b
 FXOS8700CQ device(I2C_SDA,I2C_SCL);         // accelerometer device
 Data valueArray[DATA_ARRAY_SIZE];           // array to hold sampled accelerometer data
 Ticker TickerAccel;                         // timer for measuring accelerometer data
-
 
 uint8_t MultiCastAddr[16] = {0};            // address for multi device broadcasting
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can go       
@@ -118,7 +117,6 @@ void calcAngle(){
   char angleBuff[COMM_BUFF_SIZE];                    // string to hold average
   snprintf(angleBuff, sizeof angleBuff, "angle = %.2f", angle);  // load the string
   sendMessage(angleBuff);                                  // broadcast averaged data
-  printf("%s\n",angleBuff);
   TickerAccel.attach(accelMeasure_isr, DATA_COLLECT_RATE); // turn measuring isr back on
 }
 
@@ -129,7 +127,7 @@ void calcAngle(){
 // output: none
 // **************************************************************
 void sendMessage(const char messageBuff[COMM_BUFF_SIZE]) {
-  tr_debug("sending message: %s", messageBuff);
+  printf("Sending packet from %s : %s\n", mesh.get_ip_address()+IP_LAST4_OFFSET, messageBuff);
   SocketAddress send_sockAddr(MultiCastAddr, NSAPI_IPv6, UDP_PORT);
   MySocket->sendto(send_sockAddr, messageBuff, COMM_BUFF_SIZE);
 }

@@ -44,9 +44,8 @@
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
-//#define ANGLE_DIV 0.0293       // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0293 when paddle = 21
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
-#define SCREEN_MIN_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
+#define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 #define BARRIER_RIGHT (SCREEN_LEN_LONG-10)  // boundary on the right side of screen
 #define BARRIER_LEFT 10                     // boundary on the left side of screen
 #define LEFT_SCOREBOARD 0        // X coordinate for Slave1's scoreboard
@@ -80,11 +79,11 @@ static const int16_t MulticastHops = 10;    // # of hops multicast messages can
 uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
-float Slave1_Angle = 0;                     // latest angle stored in system for Slave1
+float Slave1_Angle = PI/2;                  // latest angle stored in system for Slave1
 int8_t Slave1_Old_Paddle_Top = 0;           // top pixel for slave1's previous paddle              
 uint8_t Slave1_Score = 0;                   // Slave1's score
 
-float Slave2_Angle = 0;                     // latest angle stored in system for Slave2
+float Slave2_Angle = PI/2;                  // latest angle stored in system for Slave2
 int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
@@ -94,7 +93,7 @@ uint8_t Ball_Position_Y = SCREEN_LEN_SHORT/2;   // current Y coordinate for the 
 uint8_t Old_Ball_Position_X = Ball_Position_X;  // ball's previous X coordinate
 uint8_t Old_Ball_Position_Y = Ball_Position_Y;  // ball's previous Y coordinate
 
-uint8_t Ball_Path = RIGHT;                   // direction that ball is currently traveling
+uint8_t Ball_Path = RIGHT;                  // direction that ball is currently traveling
 // ******************************************************************
 
 
@@ -112,10 +111,10 @@ void game(void){
   TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
 
   // calculate and draw new object locations
-  float slave1_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);  // translate angle to pixel location
-  float slave2_paddle_top = SCREEN_MIN_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);  // translate angle to pixel location
-  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);        // draw Slave1's paddle
-  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK);       // draw Slave2's paddle
+  float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
+  float slave2_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);    // translate angle to pixel location
+  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);  // draw Slave1's paddle
+  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
 
   // calculate ball's current x trajectory
   if(Ball_Path == RIGHT){
@@ -268,53 +267,53 @@ void receiveMessage() {
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
+  
   // loop while data exists in buffer
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
-      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+      // split broadcasted message into segments using tokens 
+      printf("Receiving packet from %s: %s\n",source_addr.get_mac_address(),ReceiveBuffer);
+     // printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+      char* message = (char*)ReceiveBuffer;           // convert ReceiveBuffer into a string
+      char* segment = strtok(message, " = ");         // tokenize message into segments
+      int segmentIndex = 0;                           // segment's index in tokenized message
 
-      // need to update the slaves' current angles based off their transmission data
+      // update the slaves' current angles based off message data
       // Slave1
-      if(source_addr.get_ip_address()==Slave1_Addr){
-        char* angleString = (char*)ReceiveBuffer;
-        char* segment;
-        // splitting angleString into segments using tokens
-        segment = strtok (angleString, " = ");
-        int segmentIndex = 0;                       // segment # in string
-        while (segment != NULL){
-          if(segmentIndex == 1){                    // grab value for angle here
-            Slave1_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+      if(source_addr.get_ip_address() == Slave1_Addr){
+        if(strcmp(segment, "angle") == 0){            // check for angle command
+          while (segment != NULL){                    // cycle through all tokens
+            if(segmentIndex == 1){                    // grab value for angle here
+              Slave1_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+            }
+            segment = strtok(NULL, " = ");            // advances segment for next iteration
+            segmentIndex++;                           // next segment
           }
-          segment = strtok(NULL, " = ");            // advances segment for next iteration
-          segmentIndex++;                           // next segment
         }
       }
 
       // Slave2
-      else if(source_addr.get_ip_address()==Slave2_Addr){
-        char* angleString = (char*)ReceiveBuffer;
-        char* segment;
-        // splitting angleString into segments using tokens
-        segment = strtok (angleString, " = ");
-        int segmentIndex = 0;                       // segment # in string
-        while (segment != NULL){
-          if(segmentIndex == 1){                    // grab value for angle here
-            Slave2_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+      else if(source_addr.get_ip_address() == Slave2_Addr){
+        if(strcmp(segment, "angle") == 0){            // check for angle command
+          while (segment != NULL){                    // cycle through all tokens
+            if(segmentIndex == 1){                    // grab value for angle here
+              Slave2_Angle = strtof (segment, NULL);  // update Slave's angle. str to float
+            }
+            segment = strtok(NULL, " = ");            // advances segment for next iteration
+            segmentIndex++;                           // next segment
           }
-          segment = strtok(NULL, " = ");            // advances segment for next iteration
-          segmentIndex++;                           // next segment
         }
       }
     }
 
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
-      something_in_socket=false;
+      something_in_socket = false;
     }
     else{
       // there was nothing to read.
-      something_in_socket=false;
+      something_in_socket = false;
     }  
   }
 }
@@ -349,7 +348,6 @@ void pairSlaves() {
       else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
         printf("Slave2 assigned\n");
         TFT.drawString(0, 90, (unsigned char*)("--Player 2 paired"), ST7735_WHITE, ST7735_BLACK, 1);
-
         Slave2_Addr = source_addr;
       }
 
@@ -361,8 +359,8 @@ void pairSlaves() {
       }
       // Slave4
       else if(Slave4_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave3_Addr){
-       TFT.drawString(0, 110, (unsigned char*)("--Player 4 paired"), ST7735_WHITE, ST7735_BLACK, 1); 
         printf("Slave4 assigned\n");
+        TFT.drawString(0, 110, (unsigned char*)("--Player 4 paired"), ST7735_WHITE, ST7735_BLACK, 1); 
         Slave4_Addr = source_addr;
       }
 
