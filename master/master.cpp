@@ -56,7 +56,6 @@
 #define STILL 2                  // enum for ball's directions
 
 
-
 // ******************** GLOBALS *************************************
 NanostackRfPhyAtmel rf_phy(ATMEL_SPI_MOSI, ATMEL_SPI_MISO, ATMEL_SPI_SCLK, ATMEL_SPI_CS,
                            ATMEL_SPI_RST, ATMEL_SPI_SLP, ATMEL_SPI_IRQ, ATMEL_I2C_SDA, 
@@ -98,92 +97,6 @@ uint8_t Ball_Path = RIGHT;                  // direction that ball is currently 
 
 
 // ****************** FUNCTIONS ***********************************
-
-// ******** game()************************************************
-// about:  A thread which handles all things related to the game
-// input:  none
-// output: none
-// ***************************************************************
-void game(void){
-  //erase old objects on screen
-  TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
-  TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
-  TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
-
-  // calculate and draw new object locations
-  float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
-  float slave2_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);    // translate angle to pixel location
-  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);  // draw Slave1's paddle
-  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
-
-  // calculate ball's current x trajectory
-  if(Ball_Path == RIGHT){
-    Ball_Position_X++;
-  }
-  else if(Ball_Path == LEFT){
-    Ball_Position_X--;
-  }
-
-  // check if the ball reached the barrier on the right side of the screen // TODO make sure below is similar for both cases
-  if(Ball_Position_X == BARRIER_RIGHT){
-
-    // if the ball hit the right paddle
-    if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
-      Ball_Path = LEFT;
-    }
-
-    // else if the ball scored a goal on right side of screen
-    else{
-      // place ball in center of right side of screen
-      Ball_Position_X = BARRIER_RIGHT;
-      Ball_Position_Y = slave2_paddle_top + (PADDLE_SIZE/2);
-      Ball_Path = STILL;
-
-      // update score
-      Slave1_Score++;
-      char buff[8];
-      itoa(Slave1_Score,buff,10);           
-      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-      if(Slave1_Score >= MAX_SCORE){
-        // Slave1 wins
-      }
-    }
-  }
-
-  // else if the ball reached the barrier on the left side of the screen // TODO make sure above is similar for both cases
-  else if(Ball_Position_X == BARRIER_LEFT){
-    // if the ball hit the left paddle
-    if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
-      Ball_Path = RIGHT;
-    }
-
-    // else if the ball scored a goal on the left side of screen
-    else{
-      // place ball in center of right side of screen
-      Ball_Position_X = BARRIER_LEFT;
-      Ball_Position_Y = slave1_paddle_top + (PADDLE_SIZE/2);
-      Ball_Path = STILL;
-
-      // update score
-      Slave2_Score++;
-      char buff[8];
-      itoa(Slave2_Score,buff,10);           
-      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-      if(Slave2_Score >= MAX_SCORE){
-        // Slave2 wins
-      }
-    }
-  }
-
-  // draw the ball
-  TFT.drawBall(Ball_Position_X, Ball_Position_Y, ST7735_RED);
-
-  // update objects' old values
-  Slave1_Old_Paddle_Top = slave1_paddle_top;                            // update Slave1's old pixel
-  Slave2_Old_Paddle_Top = slave2_paddle_top;                            // update old pixel
-  Old_Ball_Position_X = Ball_Position_X;                                // update ball's old x position
-  Old_Ball_Position_Y = Ball_Position_Y;                                // update ball's old y position
-}
 
 
 // ******** main() *******************************************
@@ -274,13 +187,19 @@ void receiveMessage() {
     if (length > 0) {
       // split broadcasted message into segments using tokens 
       printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
-      char* message = (char*)ReceiveBuffer;           // convert ReceiveBuffer into a string
+      char* message = (char*)ReceiveBuffer;           // convert ReceiveBuffer into a string.
       char* segment = strtok(message, " = ");         // tokenize message into segments
       int segmentIndex = 0;                           // segment's index in tokenized message
 
-      // update the slaves' current angles based off message data
+      // update the slaves' based off message data
       // Slave1
       if(source_addr.get_ip_address() == Slave1_Addr){
+        // check if slave is serving
+        if((strcmp(segment, "button") == 0) && (Ball_Position_X == BARRIER_LEFT)){
+          Ball_Path = RIGHT;
+        }
+
+        // update slave's angle value
         if(strcmp(segment, "angle") == 0){            // check for angle command
           while (segment != NULL){                    // cycle through all tokens
             if(segmentIndex == 1){                    // grab value for angle here
@@ -294,6 +213,12 @@ void receiveMessage() {
 
       // Slave2
       else if(source_addr.get_ip_address() == Slave2_Addr){
+        // check if slave is serving
+        if((strcmp(segment, "button") == 0) && (Ball_Position_X == BARRIER_RIGHT)){
+          Ball_Path = LEFT;
+        }
+
+        // update slave's angle value        
         if(strcmp(segment, "angle") == 0){            // check for angle command
           while (segment != NULL){                    // cycle through all tokens
             if(segmentIndex == 1){                    // grab value for angle here
@@ -389,6 +314,112 @@ void trace_printer(const char* str){
   printf("%s\n", str);
 }
 
+
+// ******** game()************************************************
+// about:  A thread which handles all things related to the game
+// input:  none
+// output: none
+// ***************************************************************
+void game(void){
+  //erase old objects on screen
+  TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
+  TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
+  TFT.drawBall(Old_Ball_Position_X, Old_Ball_Position_Y, ST7735_GREEN); // erase ball's position from previous cycle
+
+  // calculate and draw paddles
+  float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
+  float slave2_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);    // translate angle to pixel location
+  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);  // draw Slave1's paddle
+  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
+
+  // calculate ball's current x trajectory
+  if(Ball_Path == RIGHT){
+    Ball_Position_X++;
+  }
+  else if(Ball_Path == LEFT){
+    Ball_Position_X--;
+  }
+
+  // determine if a goal was made, or the ball hit a paddle
+  goalCheck(slave1_paddle_top, slave2_paddle_top);  
+
+  // draw the ball in its updated position
+  TFT.drawBall(Ball_Position_X, Ball_Position_Y, ST7735_RED);
+
+  // update objects' old values
+  Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
+  Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
+  Old_Ball_Position_X = Ball_Position_X;            // update ball's old x position
+  Old_Ball_Position_Y = Ball_Position_Y;            // update ball's old y position
+}
+
+
+// ******** goalCheck() *******************************************
+// about:  Determine if a goal was made, or the ball hit a paddle
+// input:  slave1_paddle_top - the top pixel for slave1's paddle
+//         slave2_paddle_top - the top pixel for slave2's paddle
+// output: none
+// ***************************************************************
+void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
+  // TODO make sure below is similar for both cases
+  // check if the ball reached the barrier on the right side of the screen 
+  if(Ball_Position_X == BARRIER_RIGHT){
+
+    // check if the ball hit the right paddle
+    if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
+      Ball_Path = LEFT;
+    }
+
+    // else if the ball scored a goal on right side of screen
+    else{
+      // place ball in center of right paddle
+      Ball_Position_X = BARRIER_RIGHT;
+      Ball_Position_Y = slave2_paddle_top + (PADDLE_SIZE/2);
+      Ball_Path = STILL;
+
+      // update score
+      Slave1_Score++;
+      char buff[8];
+      itoa(Slave1_Score,buff,10);           
+      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      
+      // check for winning game condition
+      if(Slave1_Score >= MAX_SCORE){
+        // Slave1 wins
+      }
+    }
+  }
+
+  // TODO make sure above is similar for both cases
+  // else if the ball reached the barrier on the left side of the screen 
+    else if(Ball_Position_X == BARRIER_LEFT){
+    // check if the ball hit the left paddle
+    if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
+      Ball_Path = RIGHT;
+    }
+
+    // else if the ball scored a goal on the left side of screen
+    else{
+      // place ball in center of left paddle
+      Ball_Position_X = BARRIER_LEFT;
+      Ball_Position_Y = slave1_paddle_top + (PADDLE_SIZE/2);
+      Ball_Path = STILL;
+
+      // update score
+      Slave2_Score++;
+      char buff[8];
+      itoa(Slave2_Score,buff,10);           
+      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      
+      // check for winning game condition
+      if(Slave2_Score >= MAX_SCORE){
+        // Slave2 wins
+      }
+    }
+  }
+
+  return;
+}
 
 
 // ***************************************************************
