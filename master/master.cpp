@@ -375,13 +375,16 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
       // place ball in center of right paddle
       Ball_Position_X = BARRIER_RIGHT;
       Ball_Position_Y = slave2_paddle_top + (PADDLE_SIZE/2);
-      Ball_Path = STILL;
 
-      // update score
-      Slave1_Score++;
-      char buff[8];
-      itoa(Slave1_Score,buff,10);           
-      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      if(Ball_Path != STILL){
+        Ball_Path = STILL;
+
+        // update score
+        Slave1_Score++;
+        char buff[8];
+        itoa(Slave1_Score,buff,10);           
+        TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      }
       
       // check for winning game condition
       if(Slave1_Score >= MAX_SCORE){
@@ -403,14 +406,17 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
       // place ball in center of left paddle
       Ball_Position_X = BARRIER_LEFT;
       Ball_Position_Y = slave1_paddle_top + (PADDLE_SIZE/2);
-      Ball_Path = STILL;
 
-      // update score
-      Slave2_Score++;
-      char buff[8];
-      itoa(Slave2_Score,buff,10);           
-      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-      
+      if(Ball_Path != STILL){
+        Ball_Path = STILL;
+
+        // update score
+        Slave2_Score++;
+        char buff[8];
+        itoa(Slave2_Score,buff,10);           
+        TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      }
+
       // check for winning game condition
       if(Slave2_Score >= MAX_SCORE){
         // Slave2 wins
