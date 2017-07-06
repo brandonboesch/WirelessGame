@@ -128,7 +128,7 @@ void game(void){
   if(Ball_Position_X == BARRIER_RIGHT){
 
     // if the ball hit the right paddle
-    if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
+    if((Ball_Position_Y >= Slave2_Old_Paddle_Top) && (Ball_Position_Y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
       Ball_Path = LEFT;
     }
 
@@ -136,7 +136,7 @@ void game(void){
     else{
       // place ball in center of right side of screen
       Ball_Position_X = BARRIER_RIGHT;
-      Ball_Position_Y = SCREEN_LEN_SHORT/2;
+      Ball_Position_Y = slave2_paddle_top + (PADDLE_SIZE/2);
       Ball_Path = STILL;
 
       // update score
@@ -153,7 +153,7 @@ void game(void){
   // else if the ball reached the barrier on the left side of the screen // TODO make sure above is similar for both cases
   else if(Ball_Position_X == BARRIER_LEFT){
     // if the ball hit the left paddle
-    if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
+    if((Ball_Position_Y >= Slave1_Old_Paddle_Top) && (Ball_Position_Y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
       Ball_Path = RIGHT;
     }
 
@@ -161,7 +161,7 @@ void game(void){
     else{
       // place ball in center of right side of screen
       Ball_Position_X = BARRIER_LEFT;
-      Ball_Position_Y = SCREEN_LEN_SHORT/2;
+      Ball_Position_Y = slave1_paddle_top + (PADDLE_SIZE/2);
       Ball_Path = STILL;
 
       // update score
@@ -273,8 +273,7 @@ void receiveMessage() {
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
       // split broadcasted message into segments using tokens 
-      printf("Receiving packet from %s: %s\n",source_addr.get_mac_address(),ReceiveBuffer);
-     // printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
       char* message = (char*)ReceiveBuffer;           // convert ReceiveBuffer into a string
       char* segment = strtok(message, " = ");         // tokenize message into segments
       int segmentIndex = 0;                           // segment's index in tokenized message
@@ -290,7 +289,7 @@ void receiveMessage() {
             segment = strtok(NULL, " = ");            // advances segment for next iteration
             segmentIndex++;                           // next segment
           }
-        }
+        } 
       }
 
       // Slave2
@@ -405,6 +404,7 @@ void trace_printer(const char* str){
 // output: none
 // ***************************************************************
 void myButton_isr() {
+  // if game is currently in initialization mode
   if(Init_Mode){
     Init_Mode = false;                             // finishing initilization mode
     cancel_blinking();                             // turn off last stages heartbeat
@@ -424,8 +424,10 @@ void myButton_isr() {
     TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
 
     // specify rate to rerun game() after button press. 
-    Queue1.call_every(GAME_CALL_RATE,game);   
+    Queue1.call_every(GAME_CALL_RATE,game);
   }
+
+  // else if initialization is complete and game is running
   else{
     Queue1.call(sendMessage, "button press\n");
   }
