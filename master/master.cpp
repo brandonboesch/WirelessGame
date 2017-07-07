@@ -40,7 +40,7 @@
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
 #define MAX_SCORE 5
-#define GAME_CALL_RATE 15        // the higher the value, the slower the system adds game() to the event queue
+#define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
