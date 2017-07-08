@@ -107,12 +107,12 @@ uint8_t Ball_Path = RIGHT;                  // direction that ball is currently 
 // ******************************************************************
 int main(void){
   printf("Initializing master device\n");
-
-  // setup trace printing for debug
-  mbed_trace_init();
-  mbed_trace_print_function_set(trace_printer);
   start_blinking(0.5, "red");
 
+  // setup trace printing for thread debuging. Must first be enabled in mbed_app.json
+  mbed_trace_init();
+  mbed_trace_print_function_set(trace_printer);
+  
   // setup the display
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
@@ -147,7 +147,7 @@ int main(void){
   // configure button interrupt
   MyButton.fall(&myButton_isr);
 
-  // if something happens in socket (packets in or out), the call-back is called.
+  // if something happens in socket (packets in or out), the callback is called.
   printf("Pair controllers now, and then press start.\n");
   TFT.drawString(0, 50, (unsigned char*)("Pair controllers now, and"), ST7735_WHITE, ST7735_BLACK, 1);
   TFT.drawString(0, 60, (unsigned char*)("then press start."), ST7735_WHITE, ST7735_BLACK, 1);
@@ -306,7 +306,7 @@ void pairSlaves() {
 
 
 // ******** trace_printer() *****************************************
-// about:  Function that calls printf
+// about:  Function that calls printf. Enabled by setting in mbed_app.json
 // input:  *str - pointer to string that will be printed
 // output: none
 // ******************************************************************
@@ -452,6 +452,17 @@ void myButton_isr() {
     TFT.fillScreen(ST7735_GREEN);
     TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
     TFT.drawCircle(80, 64, 10, ST7735_BLACK);
+
+    // TODO draw a line for debug
+    uint16_t x1, y1;
+    uint16_t x2, y2;
+
+    x1 = 10;
+    y1 = 10;
+    x2 = 100;
+    y2 = 100;
+
+    TFT.drawLine(x1, y1, x2, y2, ST7735_BLACK);
 
     // draw the score board
     char buff[8];

@@ -92,6 +92,9 @@ public:
     void setRotation(uint8_t r);
     uint8_t getRotation(void);
 
+    void drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color);
+
+
 protected:
     virtual int _putc(int value);
     virtual int _getc();
