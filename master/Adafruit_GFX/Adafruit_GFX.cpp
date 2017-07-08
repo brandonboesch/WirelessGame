@@ -157,7 +157,16 @@ void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r,
   }
 }
 
-// bresenham's algorithm - thx wikpedia
+
+//************* drawLine******************************************** 
+// Draws one line on the ST7735 color LCD using the Bresenham line algrorithm
+// Inputs: (x1,y1) - coordinates for start point 
+//         (x2,y2) - coordinates for end point 
+//                   x1,x2 are horizontal positions for dot 1 and dot 2. <160 on ST7735
+//                   y1,y2 are vertical positions, for dot 1 and dot 2. <128 on ST7735  
+//         color   - 16-bit color, which can be produced by ST7735 
+// Output: none 
+// ***************************************************************
 void Adafruit_GFX::drawLine(int16_t x0, int16_t y0, 
                 int16_t x1, int16_t y1, 
                 uint16_t color) {
@@ -185,10 +194,12 @@ void Adafruit_GFX::drawLine(int16_t x0, int16_t y0,
     ystep = -1;
   }
 
-  for (; x0<=x1; x0++) {
+  for (; x0<=x1; x0++){
+   
     if (steep) {
       drawPixel(y0, x0, color);
-    } else {
+    } 
+    else {
       drawPixel(x0, y0, color);
     }
     err -= dy;
@@ -516,41 +527,3 @@ int16_t Adafruit_GFX::height(void) {
   return _height; 
 }
 
-
-//************* drawLine******************************************** 
-// Draws one line on the ST7735 color LCD using the Bresenham line algrorithm
-// Inputs: (x1,y1) is the start point 
-//         (x2,y2) is the end point 
-// x1,x2 are horizontal positions, columns from the left edge 
-//          must be less than 128 
-//          0 is on the left, 127 is near the right 
-// y1,y2 are vertical positions, rows from the top edge 
-//          must be less than 160 
-//          159 is near the wires, 0 is the side opposite the wires 
-// color 16-bit color, which can be produced by ST7735_Color565() 
-// Output: none 
-void Adafruit_GFX::drawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color){
- 
-  int16_t dx = abs(x2-x1); 
-  int16_t sx = x1<x2 ? 1 : -1;
-  int16_t dy = abs(y2-y1);  
-  int16_t sy = y1<y2 ? 1 : -1;
-  int16_t err = (dx>dy ? dx : -dy)/2;
-  int16_t e2;
-
-  while(1){
-    drawPixel(x1, y1, color);
-    if(x1==x2 && y1==y2){
-			break;
-		}
-    e2 = err;
-    if(e2 > -dx){
-		  err -= dy; 
-		  x1 += sx;
-		}
-    if(e2 < dy){
-		  err += dx; 
-		  y1 += sy;
-		}
-  }
-}

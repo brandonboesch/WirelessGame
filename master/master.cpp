@@ -453,7 +453,7 @@ void myButton_isr() {
     TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
     TFT.drawCircle(80, 64, 10, ST7735_BLACK);
 
-    // TODO draw a line for debug
+    // TODO drawing a line for debug. Needs to be removed before finished
     uint16_t x1, y1;
     uint16_t x2, y2;
 
