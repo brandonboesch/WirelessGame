@@ -462,7 +462,7 @@ void myButton_isr() {
     x2 = 100;
     y2 = 100;
 
-    TFT.drawLine(x1, y1, x2, y2, ST7735_BLACK);
+    TFT.fillLineBuffer(x1, y1, x2, y2, ST7735_BLACK);
 
     // draw the score board
     char buff[8];
