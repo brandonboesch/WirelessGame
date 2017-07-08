@@ -464,6 +464,21 @@ void myButton_isr() {
 
     TFT.fillLineBuffer(x1, y1, x2, y2, ST7735_BLACK);
 
+    Coord ball_coord;
+    ball_coord.x = 10;
+    ball_coord.y = 10;
+     
+    /*
+    queue<Coord> Ball_Path_Q;  // declare a queue
+    Ball_Path_Q.push(ball_coord);
+
+    Coord ball_coord2 = Ball_Path_Q.front();
+
+    printf("ball_coord2.x = %d, ball_coord2.y = %d\n", ball_coord2.x, ball_coord2.y);
+    */
+
+    // TODO cleanup above
+
     // draw the score board
     char buff[8];
     itoa(Slave1_Score,buff,10);           
@@ -497,4 +512,6 @@ void socket_isr(){
     Queue1.call(receiveMessage);  
   }
 }
+
+
 
