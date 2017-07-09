@@ -33,6 +33,7 @@
 #include "led.h"
 #include "Adafruit_ST7735.h"
 #include "bmp.h"
+#include "fifo.h"
 
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
@@ -428,6 +429,57 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
 }
 
 
+//************* fillLineBuffer******************************************** 
+// About:  Creates a buffer which holds all the x and y coordinates for the ball. 
+//         The ball travels on a path using the Bresenham line algrorithm.
+// Inputs: (x1,y1) - coordinates for start point 
+//         (x2,y2) - coordinates for end point 
+//                   x1,x2 are horizontal positions for dot 1 and dot 2. <160 on ST7735
+//                   y1,y2 are vertical positions, for dot 1 and dot 2. <128 on ST7735  
+// Output: none 
+// ***************************************************************
+void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
+  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+  if (steep) {
+    swap(x0, y0);
+    swap(x1, y1);
+  }
+
+  if (x0 > x1) {
+    swap(x0, x1);
+    swap(y0, y1);
+  }
+
+  int16_t dx, dy;
+  dx = x1 - x0;
+  dy = abs(y1 - y0);
+
+  int16_t err = dx / 2;
+  int16_t ystep;
+
+  if (y0 < y1) {
+    ystep = 1;
+  } else {
+    ystep = -1;
+  }
+
+  for (; x0<=x1; x0++){
+   
+    if (steep) {
+     // drawPixel(y0, x0, color);
+    } 
+    else {
+     // drawPixel(x0, y0, color);
+    }
+    err -= dy;
+    if (err < 0) {
+      y0 += ystep;
+      err += dx;
+    }
+  }
+}
+
+
 // ***************************************************************
 
 
@@ -462,20 +514,24 @@ void myButton_isr() {
     x2 = 100;
     y2 = 100;
 
-    TFT.fillLineBuffer(x1, y1, x2, y2, ST7735_BLACK);
+    TFT.drawLine(x1, y1, x2, y2, ST7735_BLACK);
+    fillLineBuffer(x1, y1, x2, y2);
 
     Coord ball_coord;
     ball_coord.x = 10;
-    ball_coord.y = 10;
+    ball_coord.y = 10;   
      
-    /*
-    queue<Coord> Ball_Path_Q;  // declare a queue
-    Ball_Path_Q.push(ball_coord);
+    fifo Ball_Path_Q;
+    Ball_Path_Q.put(ball_coord);
+    printf("Ball_Path_Q.available() = %d\n", Ball_Path_Q.available());
+    printf("Ball_Path_Q.free() = %d\n", Ball_Path_Q.free());
 
-    Coord ball_coord2 = Ball_Path_Q.front();
+    Coord ball_coord2;
+    Ball_Path_Q.get(&ball_coord2);
+    printf("ball_coord2.x = %d, ball_coord2.y = %d\n", ball_coord.x, ball_coord.y);
+    printf("Ball_Path_Q.available() = %d\n", Ball_Path_Q.available());
+    printf("Ball_Path_Q.free() = %d\n", Ball_Path_Q.free());
 
-    printf("ball_coord2.x = %d, ball_coord2.y = %d\n", ball_coord2.x, ball_coord2.y);
-    */
 
     // TODO cleanup above
 

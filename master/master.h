@@ -29,6 +29,7 @@ void pairSlaves();
 
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top);
 void game(void);
+void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 
 void socket_isr();
 void myButton_isr();

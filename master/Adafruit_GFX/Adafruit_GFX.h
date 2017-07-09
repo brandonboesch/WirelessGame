@@ -92,9 +92,7 @@ public:
     void setRotation(uint8_t r);
     uint8_t getRotation(void);
 
-    void fillLineBuffer(int16_t x0, int16_t y0, 
-                        int16_t x1, int16_t y1, 
-                        uint16_t color);
+
 
 protected:
     virtual int _putc(int value);
