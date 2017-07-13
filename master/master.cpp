@@ -75,8 +75,9 @@ SocketAddress Slave4_Addr = NULL;           // address for slave 4
 Adafruit_ST7735 TFT(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // Screen object. MOSI, MISO, SCK, TFT_CS, D/C, RESET
 fifo Ball_Path_Q;                           // fifo queue that holds the ball's path
 
-Coord Ball_Coord;                           // ball's current x and y coordinates
-Coord Old_Ball_Coord;                       // ball's previous x and y coordinates
+Coord Ball_Coord_Current;                   // ball's current x and y coordinates
+Coord Ball_Coord_Prev;                      // ball's previous x and y coordinates
+Coord Ball_Coord_Start;                     // ball's starting x and y coordinates before collision
 
 uint8_t MultiCastAddr[16] = {0};            // address used for multicast messages
 static const int16_t MulticastHops = 10;    // # of hops multicast messages can   
@@ -91,7 +92,7 @@ float Slave2_Angle = PI/2;                  // latest angle stored in system for
 int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
-uint8_t Ball_Path = RIGHT;                  // direction that ball is currently traveling
+uint8_t Ball_Direction = RIGHT;             // direction that ball is currently traveling
 // ******************************************************************
 
 
@@ -194,8 +195,8 @@ void receiveMessage() {
       // Slave1
       if(source_addr.get_ip_address() == Slave1_Addr){
         // check if slave is serving
-        if((strcmp(segment, "button") == 0) && (Ball_Coord.x == BARRIER_LEFT)){
-          Ball_Path = RIGHT;
+        if((strcmp(segment, "button") == 0) && (Ball_Coord_Current.x == BARRIER_LEFT)){
+          Ball_Direction = RIGHT;
         }
 
         // update slave's angle value
@@ -213,8 +214,8 @@ void receiveMessage() {
       // Slave2
       else if(source_addr.get_ip_address() == Slave2_Addr){
         // check if slave is serving
-        if((strcmp(segment, "button") == 0) && (Ball_Coord.x == BARRIER_RIGHT)){
-          Ball_Path = LEFT;
+        if((strcmp(segment, "button") == 0) && (Ball_Coord_Current.x == BARRIER_RIGHT)){
+          Ball_Direction = LEFT;
         }
 
         // update slave's angle value        
@@ -323,7 +324,7 @@ void game(void){
   //erase old objects on screen
   TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
   TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
-  TFT.drawBall(Old_Ball_Coord.x, Old_Ball_Coord.y, ST7735_GREEN); // erase ball's position from previous cycle
+  TFT.drawBall(Ball_Coord_Prev.x, Ball_Coord_Prev.y, ST7735_GREEN); // erase ball's position from previous cycle
 
   // calculate and draw paddles
   float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
@@ -334,17 +335,34 @@ void game(void){
   // determine if a goal was made, or the ball hit a paddle
   goalCheck(slave1_paddle_top, slave2_paddle_top);
 
-  // TODO: bounce_check - check if the ball hit the ceiling or roof. If so, need to update trajectory by filling up the Ball_Path_Q.
+  // TODO: check if the ball hit the ceiling or roof. If so, need to update trajectory by filling up the Ball_Path_Q.
+  wallCheck(Ball_Coord_Start, Ball_Coord_Current);
 
   // draw the ball in its updated position
-  Ball_Path_Q.get(&Ball_Coord);
-  TFT.drawBall(Ball_Coord.x, Ball_Coord.y, ST7735_RED);
+  Ball_Path_Q.get(&Ball_Coord_Current);
+  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);
 
   // update objects' old values
   Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
   Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
-  Old_Ball_Coord.x = Ball_Coord.x;                  // update ball's old x coordinate
-  Old_Ball_Coord.y = Ball_Coord.y;                  // update ball's old y coordinate
+  Ball_Coord_Prev.x = Ball_Coord_Current.x;         // update ball's old x coordinate
+  Ball_Coord_Prev.y = Ball_Coord_Current.y;         // update ball's old y coordinate
+}
+
+
+// ******** wallCheck ********************************************
+// about:  Determines if the ball hit a wall, and if so, calculate
+//         its new trajectory and update Ball_Path_Q
+// input:  ball_coord_current - the current coordinate of the ball
+// output: none
+// ***************************************************************
+void wallCheck(Coord ball_coord_start, Coord ball_coord_current){
+  if((ball_coord_current.y == 0) && (Ball_Direction == RIGHT)){
+    printf("Wall check visited\n");
+    // fill up the Ball_Path_Q with new trajectory
+
+
+  }
 }
 
 
@@ -357,21 +375,21 @@ void game(void){
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
   // TODO make sure below is similar for both cases
   // check if the ball reached the barrier on the right side of the screen 
-  if(Ball_Coord.x == BARRIER_RIGHT){
+  if(Ball_Coord_Current.x == BARRIER_RIGHT){
 
     // check if the ball hit the right paddle
-    if((Ball_Coord.y >= Slave2_Old_Paddle_Top) && (Ball_Coord.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
-      Ball_Path = LEFT;
+    if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Direction != STILL)){
+      Ball_Direction = LEFT;
     }
 
     // else if the ball scored a goal on right side of screen
     else{
       // place ball in center of right paddle
-      Ball_Coord.x = BARRIER_RIGHT;
-      Ball_Coord.y = slave2_paddle_top + (PADDLE_SIZE/2);
+      Ball_Coord_Current.x = BARRIER_RIGHT;
+      Ball_Coord_Current.y = slave2_paddle_top + (PADDLE_SIZE/2);
 
-      if(Ball_Path != STILL){
-        Ball_Path = STILL;
+      if(Ball_Direction != STILL){
+        Ball_Direction = STILL;
 
         // update score
         Slave1_Score++;
@@ -389,20 +407,20 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
 
   // TODO make sure above is similar for both cases
   // else if the ball reached the barrier on the left side of the screen 
-    else if(Ball_Coord.x == BARRIER_LEFT){
+    else if(Ball_Coord_Current.x == BARRIER_LEFT){
     // check if the ball hit the left paddle
-    if((Ball_Coord.y >= Slave1_Old_Paddle_Top) && (Ball_Coord.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Path != STILL)){
-      Ball_Path = RIGHT;
+    if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Direction != STILL)){
+      Ball_Direction = RIGHT;
     }
 
     // else if the ball scored a goal on the left side of screen
     else{
       // place ball in center of left paddle
-      Ball_Coord.x = BARRIER_LEFT;
-      Ball_Coord.y = slave1_paddle_top + (PADDLE_SIZE/2);
+      Ball_Coord_Current.x = BARRIER_LEFT;
+      Ball_Coord_Current.y = slave1_paddle_top + (PADDLE_SIZE/2);
 
-      if(Ball_Path != STILL){
-        Ball_Path = STILL;
+      if(Ball_Direction != STILL){
+        Ball_Direction = STILL;
 
         // update score
         Slave2_Score++;
@@ -458,20 +476,18 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
   }
 
   Coord ball_coord;
-  for (; x0<=x1; x0++){ 
+  for (; x0<=x1; x0++){     // TODO, this will have to be reversed if the ball is moving left
     if (steep) {
       ball_coord.x = y0;
       ball_coord.y = x0;    
-           // drawPixel(y0, x0, color);
     } 
     else {
-     // drawPixel(x0, y0, color);
       ball_coord.x = x0;
       ball_coord.y = y0;   
     }
     Ball_Path_Q.put(ball_coord);
-    printf("Ball_Path_Q.available() = %d\n", Ball_Path_Q.available());
-    printf("Ball_Path_Q.free() = %d\n", Ball_Path_Q.free());
+    printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
+    printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
 
     err -= dy;
     if (err < 0) {
@@ -508,16 +524,15 @@ void myButton_isr() {
     TFT.drawCircle(80, 64, 10, ST7735_BLACK);
 
     // TODO drawing a line for debug. Needs to be removed before finished
-    uint16_t x1, y1;
-    uint16_t x2, y2;
+    Ball_Coord_Start.x = BARRIER_LEFT;
+    Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
 
-    x1 = BARRIER_LEFT;
-    y1 = SCREEN_LEN_SHORT/2;
-    x2 = SCREEN_LEN_LONG/2;
-    y2 = SCREEN_LEN_SHORT;
+    Coord nextCoord;
+    nextCoord.x = SCREEN_LEN_LONG/2;
+    nextCoord.y = 0;
+ 
+    fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
-    TFT.drawLine(x1, y1, x2, y2, ST7735_BLACK);
-    fillLineBuffer(x1, y1, x2, y2);
     // TODO cleanup above
 
     // draw the score board
