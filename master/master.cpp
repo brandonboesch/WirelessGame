@@ -348,8 +348,6 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
       ball_coord.y = y0;   
     }
     Ball_Path_Q.put(ball_coord);
-    printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
-    printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
 
     err -= dy;
     if (err < 0) {
@@ -378,15 +376,15 @@ void game(void){
   TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
 
   // determine if a goal was made, or the ball hit a paddle
- // goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
+  goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
 
   // check if the ball hit the ceiling or roof.
   wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
 
   // draw the ball in its updated position
-  Ball_Path_Q.get(&Ball_Coord_Current);
-  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);
-
+  if(Ball_Path_Q.get(&Ball_Coord_Current)){
+    TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);
+  }
   // update objects' old values
   Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
   Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
@@ -418,6 +416,10 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
     double newX = (SCREEN_LEN_SHORT / tan(phi)) + ball_coord_current.x;
     double newY = SCREEN_LEN_SHORT;
 
+    // update start location
+    Ball_Coord_Start.x = Ball_Coord_Current.x;
+    Ball_Coord_Start.y = Ball_Coord_Current.y;
+
     
     printf("theta = %lf, phi = %lf, x = %lf, y = %lf, newX = %lf\n", theta, phi, x, y, newX);
 
@@ -439,70 +441,69 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
 // output: none
 // ***************************************************************
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
-  // TODO make sure below is similar for both cases
-  // check if the ball reached the barrier on the right side of the screen 
-  if(Ball_Coord_Current.x == BARRIER_RIGHT){
+  if(Ball_Direction != STILL){
+    // TODO make sure below is similar for both cases
+    // check if the ball reached the barrier on the right side of the screen 
+    if(Ball_Coord_Current.x == BARRIER_RIGHT){
+      Ball_Path_Q.reset();                       // empty out path Q
 
-    // check if the ball hit the right paddle
-    if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Direction != STILL)){
-      Ball_Direction = LEFT;
-    }
+      // check if the ball hit the right paddle
+      if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
+        Ball_Direction = LEFT;
+      }
 
-    // else if the ball scored a goal on right side of screen
-    else{
-      // place ball in center of right paddle
-      Ball_Coord_Current.x = BARRIER_RIGHT;
-      Ball_Coord_Current.y = slave2_paddle_top + (PADDLE_SIZE/2);
-
-      if(Ball_Direction != STILL){
+      // else if the ball scored a goal on right side of screen
+      else{
         Ball_Direction = STILL;
 
+        // place ball in center of right paddle
+        Ball_Coord_Current.x = BARRIER_RIGHT;
+        Ball_Coord_Current.y = slave2_paddle_top + (PADDLE_SIZE/2);
+     
         // update score
         Slave1_Score++;
         char buff[8];
         itoa(Slave1_Score,buff,10);           
         TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-      }
-      
-      // check for winning game condition
-      if(Slave1_Score >= MAX_SCORE){
-        // Slave1 wins
+        
+        // check for winning game condition
+        if(Slave1_Score >= MAX_SCORE){
+          // Slave1 wins
+        }
       }
     }
-  }
 
-  // TODO make sure above is similar for both cases
-  // else if the ball reached the barrier on the left side of the screen 
+    // TODO make sure above is similar for both cases
+    // else if the ball reached the barrier on the left side of the screen 
     else if(Ball_Coord_Current.x == BARRIER_LEFT){
-    // check if the ball hit the left paddle
-    if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE) && (Ball_Direction != STILL)){
-      Ball_Direction = RIGHT;
-    }
+      Ball_Path_Q.reset();                       // empty out path Q
 
-    // else if the ball scored a goal on the left side of screen
-    else{
-      // place ball in center of left paddle
-      Ball_Coord_Current.x = BARRIER_LEFT;
-      Ball_Coord_Current.y = slave1_paddle_top + (PADDLE_SIZE/2);
+      // check if the ball hit the left paddle
+      if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
+        Ball_Direction = RIGHT;
+      }
 
-      if(Ball_Direction != STILL){
+      // else if the ball scored a goal on the left side of screen
+      else{
         Ball_Direction = STILL;
+
+        // place ball in center of left paddle
+        Ball_Coord_Current.x = BARRIER_LEFT;
+        Ball_Coord_Current.y = slave1_paddle_top + (PADDLE_SIZE/2);
 
         // update score
         Slave2_Score++;
         char buff[8];
         itoa(Slave2_Score,buff,10);           
         TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-      }
 
-      // check for winning game condition
-      if(Slave2_Score >= MAX_SCORE){
-        // Slave2 wins
+        // check for winning game condition
+        if(Slave2_Score >= MAX_SCORE){
+          // Slave2 wins
+        }
       }
     }
   }
-
-  return;
 }
 
 
@@ -532,7 +533,7 @@ void myButton_isr() {
     TFT.drawCircle(80, 64, 10, ST7735_BLACK);
 
     // TODO drawing a line for debug. Needs to be removed before finished
-    Ball_Coord_Start.x = BARRIER_LEFT;
+    Ball_Coord_Start.x = BARRIER_LEFT+1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
     nextCoord.x = SCREEN_LEN_LONG/2;

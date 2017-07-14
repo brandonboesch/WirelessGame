@@ -7,25 +7,31 @@
 
 #include "fifo.h"
 
-fifo::fifo()
-{
+fifo::fifo(){
 	this->head = 0;
 	this->tail = 0;
 }
 
+// resets the fifo to zero elements
+void fifo::reset(){
+	this->head = 0;
+	this->tail = 0;
+}
+
+
 // returns how many items are available in the queue
-uint32_t fifo::available()
-{
+uint32_t fifo::available(){
 	return (FIFO_SIZE + this->head - this->tail) % FIFO_SIZE;
 }
-uint32_t fifo::free()
-{
+
+
+uint32_t fifo::free(){
 	return (FIFO_SIZE - 1 - available());
 }
 
-// add an object to the fifo. returns 1 if full, 0 on success
-uint8_t fifo::put(FIFO_TYPE data)
-{
+
+// add an object to the fifo. returns 0 if full, 1 on success
+uint8_t fifo::put(FIFO_TYPE data){
 	uint32_t next;
 
 	// check if FIFO has room
@@ -33,24 +39,23 @@ uint8_t fifo::put(FIFO_TYPE data)
 	if (next == this->tail)
 	{
 		// full
-		return 1;
+		return 0;
 	}
 
 	this->buffer[this->head] = data;
 	this->head = next;
 
-	return 0;
+	return 1;
 }
 
-// get an item from the fifo. returns 1 if full, 0 on success
-uint8_t fifo::get(FIFO_TYPE* data)
-{
+
+// get an item from the fifo. returns 0 if empty, 1 on success
+uint8_t fifo::get(FIFO_TYPE* data){
 	uint32_t next;
 
 	// check if FIFO has data
-	if (this->head == this->tail)
-	{
-		return 1; // FIFO empty
+	if (this->head == this->tail){
+		return 0; // FIFO empty
 	}
 
 	next = (this->tail + 1) % FIFO_SIZE;
@@ -58,5 +63,5 @@ uint8_t fifo::get(FIFO_TYPE* data)
 	*data = this->buffer[this->tail];
 	this->tail = next;
 
-	return 0;
+	return 1;
 }
