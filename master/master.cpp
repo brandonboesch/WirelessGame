@@ -24,6 +24,7 @@
 // ******************************************************************
 
 #include "mbed.h"
+#include "fifo.h"
 #include "master.h"
 #include "ip6string.h"
 #include "NanostackInterface.h"
@@ -33,7 +34,7 @@
 #include "led.h"
 #include "Adafruit_ST7735.h"
 #include "bmp.h"
-#include "fifo.h"
+#include <math.h>
 
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
@@ -69,8 +70,6 @@ EventQueue Queue1;                          // queue for sending messages
 
 SocketAddress Slave1_Addr = NULL;           // address for slave 1
 SocketAddress Slave2_Addr = NULL;           // address for slave 2
-SocketAddress Slave3_Addr = NULL;           // address for slave 3
-SocketAddress Slave4_Addr = NULL;           // address for slave 4
 
 Adafruit_ST7735 TFT(PTD6, PTD7, PTD5, PTD4, PTC18, PTC15); // Screen object. MOSI, MISO, SCK, TFT_CS, D/C, RESET
 fifo Ball_Path_Q;                           // fifo queue that holds the ball's path
@@ -262,34 +261,21 @@ void pairSlaves() {
       
       // checks if slave is already assigned in system.  If not, and If a slot is available, then assign the new pair request there.
       // Slave1
-      if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
+      if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr){
         printf("Slave1 assigned\n");
         TFT.drawString(0, 80, (unsigned char*)("--Player 1 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave1_Addr = source_addr;
 
       // Slave2
       }
-      else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave3_Addr && source_addr != Slave4_Addr){
+      else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr){
         printf("Slave2 assigned\n");
         TFT.drawString(0, 90, (unsigned char*)("--Player 2 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave2_Addr = source_addr;
       }
 
-      // Slave3
-      else if(Slave3_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave4_Addr){
-        printf("Slave3 assigned\n");
-        TFT.drawString(0, 100, (unsigned char*)("--Player 3 paired"), ST7735_WHITE, ST7735_BLACK, 1);
-        Slave3_Addr = source_addr;
-      }
-      // Slave4
-      else if(Slave4_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr && source_addr != Slave2_Addr && source_addr != Slave3_Addr){
-        printf("Slave4 assigned\n");
-        TFT.drawString(0, 110, (unsigned char*)("--Player 4 paired"), ST7735_WHITE, ST7735_BLACK, 1); 
-        Slave4_Addr = source_addr;
-      }
-
       // print out current pairing results
-      printf("\nSlave1_Addr: %s\nSlave2_Addr: %s\nSlave3_Addr: %s\nSlave4_Addr: %s\n", Slave1_Addr.get_ip_address(), Slave2_Addr.get_ip_address(), Slave3_Addr.get_ip_address(), Slave4_Addr.get_ip_address());
+      printf("\nSlave1_Addr: %s\nSlave2_Addr: %s\n", Slave1_Addr.get_ip_address(), Slave2_Addr.get_ip_address());
     }
     
     // error checkong
@@ -315,6 +301,65 @@ void trace_printer(const char* str){
 }
 
 
+//************* fillLineBuffer******************************************** 
+// About:  Creates a buffer which holds all the x and y coordinates for the ball. 
+//         The ball travels on a path using the Bresenham line algrorithm.
+// Inputs: (x1,y1) - coordinates for start point 
+//         (x2,y2) - coordinates for end point 
+//                   x1,x2 are horizontal positions for dot 1 and dot 2. <160 on ST7735
+//                   y1,y2 are vertical positions, for dot 1 and dot 2. <128 on ST7735  
+// Output: none 
+// ***************************************************************
+void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
+  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
+  if (steep) {
+    swap(x0, y0);
+    swap(x1, y1);
+  }
+
+  if (x0 > x1) {
+    swap(x0, x1);
+    swap(y0, y1);
+  }
+
+  int16_t dx, dy;
+  dx = x1 - x0;
+  dy = abs(y1 - y0);
+
+  int16_t err = dx / 2;
+  int16_t ystep;
+
+  if (y0 < y1) {
+    ystep = 1;
+  } 
+  else {
+    ystep = -1;
+  }
+
+  Coord ball_coord;
+  fifo ball_path_Q;
+  for (; x0<=x1; x0++){     // TODO, this will have to be reversed if the ball is moving left
+    if (steep) {
+      ball_coord.x = y0;
+      ball_coord.y = x0;    
+    } 
+    else {
+      ball_coord.x = x0;
+      ball_coord.y = y0;   
+    }
+    Ball_Path_Q.put(ball_coord);
+    printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
+    printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
+
+    err -= dy;
+    if (err < 0) {
+      y0 += ystep;
+      err += dx;
+    }
+  }
+}
+
+
 // ******** game()************************************************
 // about:  A thread which handles all things related to the game
 // input:  none
@@ -333,10 +378,10 @@ void game(void){
   TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
 
   // determine if a goal was made, or the ball hit a paddle
-  goalCheck(slave1_paddle_top, slave2_paddle_top);
+ // goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
 
-  // TODO: check if the ball hit the ceiling or roof. If so, need to update trajectory by filling up the Ball_Path_Q.
-  wallCheck(Ball_Coord_Start, Ball_Coord_Current);
+  // check if the ball hit the ceiling or roof.
+  wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
 
   // draw the ball in its updated position
   Ball_Path_Q.get(&Ball_Coord_Current);
@@ -350,19 +395,40 @@ void game(void){
 }
 
 
+// TODO finish this function that is called every cycle from game()
 // ******** wallCheck ********************************************
 // about:  Determines if the ball hit a wall, and if so, calculate
 //         its new trajectory and update Ball_Path_Q
 // input:  ball_coord_current - the current coordinate of the ball
 // output: none
 // ***************************************************************
-void wallCheck(Coord ball_coord_start, Coord ball_coord_current){
-  if((ball_coord_current.y == 0) && (Ball_Direction == RIGHT)){
-    printf("Wall check visited\n");
-    // fill up the Ball_Path_Q with new trajectory
+bool first_call = true;
+void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_direction){
+  if((ball_coord_current.y == 0) && (ball_direction == RIGHT) && !first_call){
+    // calculate theta 
+    double x = ball_coord_current.x - ball_coord_start.x;
+    double y = ball_coord_start.y;
+    double theta = atan(y/x);
+    
+    // calculate phi using theta (phi = 90 - theta)
+    double phi = (PI/2) - theta;
+    
+      
+    // calculate location of next point
+    double newX = (SCREEN_LEN_SHORT / tan(phi)) + ball_coord_current.x;
+    double newY = SCREEN_LEN_SHORT;
 
+    
+    printf("theta = %lf, phi = %lf, x = %lf, y = %lf, newX = %lf\n", theta, phi, x, y, newX);
+
+    //TODO fill up the Ball_Path_Q with new trajectory
+    fillLineBuffer(ball_coord_current.x, ball_coord_current.y, newX, newY); 
 
   }
+  if((ball_coord_current.y == SCREEN_LEN_SHORT) && (ball_direction == RIGHT) && !first_call){
+    printf("made it to other side\n");
+  }
+  first_call = false;
 }
 
 
@@ -440,64 +506,6 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
 }
 
 
-//************* fillLineBuffer******************************************** 
-// About:  Creates a buffer which holds all the x and y coordinates for the ball. 
-//         The ball travels on a path using the Bresenham line algrorithm.
-// Inputs: (x1,y1) - coordinates for start point 
-//         (x2,y2) - coordinates for end point 
-//                   x1,x2 are horizontal positions for dot 1 and dot 2. <160 on ST7735
-//                   y1,y2 are vertical positions, for dot 1 and dot 2. <128 on ST7735  
-// Output: none 
-// ***************************************************************
-void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
-  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
-  if (steep) {
-    swap(x0, y0);
-    swap(x1, y1);
-  }
-
-  if (x0 > x1) {
-    swap(x0, x1);
-    swap(y0, y1);
-  }
-
-  int16_t dx, dy;
-  dx = x1 - x0;
-  dy = abs(y1 - y0);
-
-  int16_t err = dx / 2;
-  int16_t ystep;
-
-  if (y0 < y1) {
-    ystep = 1;
-  } 
-  else {
-    ystep = -1;
-  }
-
-  Coord ball_coord;
-  for (; x0<=x1; x0++){     // TODO, this will have to be reversed if the ball is moving left
-    if (steep) {
-      ball_coord.x = y0;
-      ball_coord.y = x0;    
-    } 
-    else {
-      ball_coord.x = x0;
-      ball_coord.y = y0;   
-    }
-    Ball_Path_Q.put(ball_coord);
-    printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
-    printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
-
-    err -= dy;
-    if (err < 0) {
-      y0 += ystep;
-      err += dx;
-    }
-  }
-}
-
-
 // ***************************************************************
 
 
@@ -526,14 +534,10 @@ void myButton_isr() {
     // TODO drawing a line for debug. Needs to be removed before finished
     Ball_Coord_Start.x = BARRIER_LEFT;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
-
     Coord nextCoord;
     nextCoord.x = SCREEN_LEN_LONG/2;
     nextCoord.y = 0;
- 
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
-
-    // TODO cleanup above
 
     // draw the score board
     char buff[8];

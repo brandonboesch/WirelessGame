@@ -5,6 +5,8 @@
 #ifndef MASTER_H
 #define MASTER_H
 
+#include "fifo.h"
+
 // ****************** CLASSES *******************************
 
 // ******** Coord *******************************************
@@ -14,8 +16,8 @@
 // **********************************************************
 class Coord{
   public:
-    int8_t x;
-    int8_t y;
+    uint16_t x;
+    uint16_t y;
 };
 
 
@@ -26,11 +28,10 @@ void sendMessage(const char messageBuff[COMM_BUFF_SIZE]);
 void receiveMessage();
 void pairSlaves();
 
-
+void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top);
 void game(void);
-void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
-void wallCheck(Coord ball_coord_start, Coord ball_coord_current);
+void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_direction);
   
 void socket_isr();
 void myButton_isr();
