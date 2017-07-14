@@ -347,7 +347,7 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
       ball_coord.x = x0;
       ball_coord.y = y0;   
     }
-    Ball_Path_Q.put(ball_coord);
+    Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
 
     err -= dy;
     if (err < 0) {
@@ -393,7 +393,6 @@ void game(void){
 }
 
 
-// TODO finish this function that is called every cycle from game()
 // ******** wallCheck ********************************************
 // about:  Determines if the ball hit a wall, and if so, calculate
 //         its new trajectory and update Ball_Path_Q
