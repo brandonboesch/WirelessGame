@@ -421,14 +421,11 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
     double x = ball_coord_current.x - ball_coord_start.x;
     double y = ball_coord_start.y;
     double theta = atan(y/x);
-    
-    // calculate phi using theta (phi = 90 - theta)
-    double phi = (PI/2) - theta;
-      
-    // calculate location of next point
-    double newX = (SCREEN_LEN_SHORT / tan(phi)) + ball_coord_current.x;
+       
+    // calculate location of next point. By law of reflection, will have same angle as theta
+    double newX = (SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x;
     double newY = SCREEN_LEN_SHORT;
-    printf("theta = %lf, phi = %lf, x = %lf, y = %lf, newX = %lf\n", theta, phi, x, y, newX);
+    printf("theta = %lf, x = %lf, y = %lf, newX = %lf\n", theta, x, y, newX);
 
     // update start location
     Ball_Coord_Start.x = Ball_Coord_Current.x;
