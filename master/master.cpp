@@ -317,12 +317,15 @@ void fillLineBuffer(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
   int16_t sy = y1<y2 ? 1 : -1;
   int16_t err = (dx>dy ? dx : -dy)/2;
   int16_t e2;
-  Coord ball_coord;               // coordinates that get push into fifo
-
+  Coord ball_coord;                 // coordinates that get push into fifo
+  bool first_coord = true;          // tells you if it is the first iteration of while loop below
+   
   while(1){
     ball_coord.x = x1;
     ball_coord.y = y1;
-    Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
+    if(first_coord == false){       // do not add current coordinate to path
+      Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
+    }
     if(x1==x2 && y1==y2){
 			break;
 		}
@@ -335,6 +338,7 @@ void fillLineBuffer(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
 		  err += dx; 
 		  y1 += sy;
 		}
+    first_coord = false;            // first iteration finished
   }
 }
 
@@ -397,6 +401,8 @@ void game(void){
 // output: none
 // ***************************************************************
 void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_direction){
+  // TODO make this copy be equivalent to the y == SCREEN_LEN_SHORT version below
+  // check whether the ball hit the ceiling
   if((ball_coord_current.y == 0) && (ball_direction == RIGHT)){
     // calculate theta 
     double x = ball_coord_current.x - ball_coord_start.x;
@@ -404,9 +410,9 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
     double theta = atan(y/x);
        
     // calculate location of next point. By law of reflection, will have same angle as theta
-    double newX = (SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x;
-    double newY = SCREEN_LEN_SHORT;
-    printf("theta = %lf, x = %lf, y = %lf, newX = %lf\n", theta, x, y, newX);
+    int16_t newX = (SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x;
+    int16_t newY = SCREEN_LEN_SHORT;
+    //printf("theta = %lf, newX = %d, newY = %d\n", theta, newX, newY);
 
     // update start location
     Ball_Coord_Start.x = Ball_Coord_Current.x;
@@ -414,10 +420,27 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
 
     // fill up the Ball_Path_Q with new trajectory
     fillLineBuffer(ball_coord_current.x, ball_coord_current.y, newX, newY); 
-
   }
+
+  // TODO make this copy be equivalent to the y == 0 version above
+  // check whether the ball hit the floor
   if((ball_coord_current.y == SCREEN_LEN_SHORT) && (ball_direction == RIGHT)){
-    printf("made it to other side\n");
+    // calculate theta 
+    double x = ball_coord_current.x - ball_coord_start.x;
+    double y = ball_coord_current.y;
+    double theta = atan(y/x);
+        
+    // calculate location of next point. By law of reflection, will have same angle as theta
+    int16_t newX = (SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x;
+    int16_t newY = 0;
+    //printf("theta = %lf, newX = %d, newY = %d\n", theta, newX, newY);
+
+    // update start location
+    Ball_Coord_Start.x = Ball_Coord_Current.x;
+    Ball_Coord_Start.y = Ball_Coord_Current.y;
+
+    // fill up the Ball_Path_Q with new trajectory
+    fillLineBuffer(ball_coord_current.x, ball_coord_current.y, newX, newY); 
   }
 }
 
