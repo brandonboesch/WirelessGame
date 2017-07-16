@@ -337,7 +337,6 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
   }
 
   Coord ball_coord;
-  fifo ball_path_Q;
   for (; x0<=x1; x0++){     // TODO, this will have to be reversed if the ball is moving left
     if (steep) {
       ball_coord.x = y0;
@@ -348,7 +347,9 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
       ball_coord.y = y0;   
     }
     Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
-
+    //printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
+    //printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
+    
     err -= dy;
     if (err < 0) {
       y0 += ystep;
@@ -375,16 +376,17 @@ void game(void){
   TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);  // draw Slave1's paddle
   TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
 
-  // determine if a goal was made, or the ball hit a paddle
-  goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
-
-  // check if the ball hit the ceiling or roof.
-  wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
-
   // draw the ball in its updated position
   if(Ball_Path_Q.get(&Ball_Coord_Current)){
     TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);
   }
+
+  // determine if a goal was made, or if the ball hit a paddle
+  goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
+
+  // check if the ball hit any walls.
+  wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
+
   // update objects' old values
   Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
   Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
@@ -409,20 +411,17 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
     
     // calculate phi using theta (phi = 90 - theta)
     double phi = (PI/2) - theta;
-    
       
     // calculate location of next point
     double newX = (SCREEN_LEN_SHORT / tan(phi)) + ball_coord_current.x;
     double newY = SCREEN_LEN_SHORT;
+    printf("theta = %lf, phi = %lf, x = %lf, y = %lf, newX = %lf\n", theta, phi, x, y, newX);
 
     // update start location
     Ball_Coord_Start.x = Ball_Coord_Current.x;
     Ball_Coord_Start.y = Ball_Coord_Current.y;
 
-    
-    printf("theta = %lf, phi = %lf, x = %lf, y = %lf, newX = %lf\n", theta, phi, x, y, newX);
-
-    //TODO fill up the Ball_Path_Q with new trajectory
+    // fill up the Ball_Path_Q with new trajectory
     fillLineBuffer(ball_coord_current.x, ball_coord_current.y, newX, newY); 
 
   }
