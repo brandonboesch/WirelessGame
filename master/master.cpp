@@ -301,9 +301,8 @@ void trace_printer(const char* str){
 }
 
 
-// TODO, this function is not working when steep is activated, since it draws the line from the other direction. see if I can find another draw line function that does not swap direction of draw
 //************* fillLineBuffer******************************************** 
-// About:  Creates a buffer which holds all the x and y coordinates for the ball. 
+// About:  Fills a buffer which holds all the x and y coordinates for the ball. 
 //         The ball travels on a path using the Bresenham line algrorithm.
 // Inputs: (x1,y1) - coordinates for start point 
 //         (x2,y2) - coordinates for end point 
@@ -311,51 +310,31 @@ void trace_printer(const char* str){
 //                   y1,y2 are vertical positions, for dot 1 and dot 2. <128 on ST7735  
 // Output: none 
 // ***************************************************************
-void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
-  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
-  if (steep) {
-    swap(x0, y0);
-    swap(x1, y1);
-  }
+void fillLineBuffer(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
+  int16_t dx = abs(x2-x1); 
+  int16_t sx = x1<x2 ? 1 : -1;
+  int16_t dy = abs(y2-y1);  
+  int16_t sy = y1<y2 ? 1 : -1;
+  int16_t err = (dx>dy ? dx : -dy)/2;
+  int16_t e2;
+  Coord ball_coord;               // coordinates that get push into fifo
 
-  if (x0 > x1) {
-   swap(x0, x1);
-    swap(y0, y1);
-  }
-
-  int16_t dx, dy;
-  dx = x1 - x0;
-  dy = abs(y1 - y0);
-
-  int16_t err = dx / 2;
-  int16_t ystep;
-
-  if (y0 < y1) {
-    ystep = 1;
-  } 
-  else {
-    ystep = -1;
-  }
-
-  Coord ball_coord;
-  for (; x0<=x1; x0++){     // TODO, this will have to be reversed if the ball is moving left
-    if (steep) {
-      ball_coord.x = y0;
-      ball_coord.y = x0;    
-    } 
-    else {
-      ball_coord.x = x0;
-      ball_coord.y = y0;   
-    }
+  while(1){
+    ball_coord.x = x1;
+    ball_coord.y = y1;
     Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
-    
-   // printf(" fill coord x = %d, y = %d.\tBall_Path_Q.available() = %lu, Ball_Path_Q.free = %lu\n",ball_coord.x, ball_coord.y, Ball_Path_Q.available(), Ball_Path_Q.free());  // TODO don't forget to comment out when not debuging
-    
-    err -= dy;
-    if (err < 0) {
-      y0 += ystep;
-      err += dx;
-    }
+    if(x1==x2 && y1==y2){
+			break;
+		}
+    e2 = err;
+    if(e2 > -dx){
+		  err -= dy; 
+		  x1 += sx;
+		}
+    if(e2 < dy){
+		  err += dx; 
+		  y1 += sy;
+		}
   }
 }
 
@@ -541,7 +520,7 @@ void myButton_isr() {
     Ball_Coord_Start.x = BARRIER_LEFT+1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG/2;
+    nextCoord.x = SCREEN_LEN_LONG/2 - 30;
     nextCoord.y = 0;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
