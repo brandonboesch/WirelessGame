@@ -301,6 +301,7 @@ void trace_printer(const char* str){
 }
 
 
+// TODO, this function is not working when steep is activated, since it draws the line from the other direction. see if I can find another draw line function that does not swap direction of draw
 //************* fillLineBuffer******************************************** 
 // About:  Creates a buffer which holds all the x and y coordinates for the ball. 
 //         The ball travels on a path using the Bresenham line algrorithm.
@@ -318,7 +319,7 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
   }
 
   if (x0 > x1) {
-    swap(x0, x1);
+   swap(x0, x1);
     swap(y0, y1);
   }
 
@@ -347,8 +348,8 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
       ball_coord.y = y0;   
     }
     Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
-    //printf("Ball_Path_Q.available() = %lu\n", Ball_Path_Q.available());
-    //printf("Ball_Path_Q.free() = %lu\n", Ball_Path_Q.free());
+    
+    printf(" x = %d, y = %d, Ball_Path_Q.available() = %lu, Ball_Path_Q.free = %lu\n",ball_coord.x, ball_coord.y, Ball_Path_Q.available(), Ball_Path_Q.free());  // TODO don't forget to comment out when not debuging
     
     err -= dy;
     if (err < 0) {
@@ -377,12 +378,21 @@ void game(void){
   TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
 
 
-  // get proper coordinates before redrawing the ball
-  if(Ball_Direction != STILL){               // if ball is moving
-    Ball_Path_Q.get(&Ball_Coord_Current);    // updates Ball_Coord_Current with next coordinate found in Q
+  // if the ball is moving
+  if(Ball_Direction != STILL){               
+    // updates Ball_Coord_Current with next coordinate found in Q
+    Ball_Path_Q.get(&Ball_Coord_Current);    
+
+    // determine if a goal was made, or if the ball hit a paddle
+    goalCheck(slave1_paddle_top, slave2_paddle_top);
+
+    // check if the ball hit any walls.
+    wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
   }
-  else if (Ball_Direction == STILL){         // else if ball is still
-    // check which side of the screen the ball is on
+
+  // else if ball is still
+  else if (Ball_Direction == STILL){         
+    // ball needs to be placed on the center of the closest paddle
     if(Ball_Coord_Current.x == BARRIER_RIGHT){                     // if ball is on the right side 
       Ball_Coord_Current.y = slave2_paddle_top + (PADDLE_SIZE/2);  // place ball in center of right paddle
     }
@@ -390,21 +400,14 @@ void game(void){
       Ball_Coord_Current.y = slave1_paddle_top + (PADDLE_SIZE/2);  // place ball in center of right paddle
     }
   }
+
   // redraw ball in its updated coordinate
-  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);         // draw ball to screen
+  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);     // draw ball to screen
   
-
-  // determine if a goal was made, or if the ball hit a paddle
-  goalCheck(slave1_paddle_top, slave2_paddle_top);  // TODO need to update
-
-  // check if the ball hit any walls.
-  wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Direction);
-
   // update objects' old values
   Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
   Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
-  Ball_Coord_Prev.x = Ball_Coord_Current.x;         // update ball's old x coordinate
-  Ball_Coord_Prev.y = Ball_Coord_Current.y;         // update ball's old y coordinate
+  Ball_Coord_Prev = Ball_Coord_Current;             // update ball's old coordinates
 }
 
 
@@ -449,65 +452,63 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
 // output: none
 // ***************************************************************
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
-  // ensure this is the only time this runs by checking if ball is not STILL
-  if(Ball_Direction != STILL){
-    // TODO make sure below is similar for both cases
-    // check if the ball reached the barrier on the right side of the screen 
-    if(Ball_Coord_Current.x == BARRIER_RIGHT){
-      Ball_Path_Q.reset();                       // empty out path Q
-      // check if the ball hit the right paddle
-      if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
-        Ball_Direction = LEFT;
-      }
-
-      // else if the ball scored a goal on right side of screen
-      else{
-        Ball_Direction = STILL;                  // ball should stop after goal and get reset on paddle. 
-        // erase ball's current location. Will get updated in game() since ball is still now
-        TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
-    
-        // update score
-        Slave1_Score++;
-        char buff[8];
-        itoa(Slave1_Score,buff,10);           
-        TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-        
-        // check for winning game condition
-        if(Slave1_Score >= MAX_SCORE){
-          // Slave1 wins
-        }
-      }
+  // TODO make sure below is similar for both cases
+  // check if the ball reached the barrier on the right side of the screen 
+  if(Ball_Coord_Current.x == BARRIER_RIGHT){
+    Ball_Path_Q.reset();                       // empty out path Q
+    // check if the ball hit the right paddle
+    if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
+      Ball_Direction = LEFT;
     }
 
-    // TODO make sure above is similar for both cases
-    // else if the ball reached the barrier on the left side of the screen 
-    else if(Ball_Coord_Current.x == BARRIER_LEFT){
-      Ball_Path_Q.reset();                       // empty out path Q
-      // check if the ball hit the left paddle
-      if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
-        Ball_Direction = RIGHT;
-      }
-
-      // else if the ball scored a goal on the left side of screen
-      else{
-        Ball_Direction = STILL;                  // ball should stop after goal and get reset on paddle. 
-
-        // erase ball's current location. Will get updated in game() since ball is still now
-        TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
-
-        // update score
-        Slave2_Score++;
-        char buff[8];
-        itoa(Slave2_Score,buff,10);           
-        TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
-
-        // check for winning game condition
-        if(Slave2_Score >= MAX_SCORE){
-          // Slave2 wins
-        }
+    // else if the ball scored a goal on right side of screen
+    else{
+      Ball_Direction = STILL;                  // ball should stop after goal and get reset on paddle. 
+      // erase ball's current location. Will get updated in game() since ball is still now
+      TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
+  
+      // update score
+      Slave1_Score++;
+      char buff[8];
+      itoa(Slave1_Score,buff,10);           
+      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      
+      // check for winning game condition
+      if(Slave1_Score >= MAX_SCORE){
+        // Slave1 wins
       }
     }
   }
+
+  // TODO make sure above is similar for both cases
+  // else if the ball reached the barrier on the left side of the screen 
+  else if(Ball_Coord_Current.x == BARRIER_LEFT){
+    Ball_Path_Q.reset();                       // empty out path Q
+    // check if the ball hit the left paddle
+    if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
+      Ball_Direction = RIGHT;
+    }
+
+    // else if the ball scored a goal on the left side of screen
+    else{
+      Ball_Direction = STILL;                  // ball should stop after goal and get reset on paddle. 
+
+      // erase ball's current location. Will get updated in game() since ball is still now
+      TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
+
+      // update score
+      Slave2_Score++;
+      char buff[8];
+      itoa(Slave2_Score,buff,10);           
+      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+
+      // check for winning game condition
+      if(Slave2_Score >= MAX_SCORE){
+        // Slave2 wins
+      }
+    }
+  }
+
 }
 
 
