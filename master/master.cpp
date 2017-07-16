@@ -45,6 +45,7 @@
 #define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
+#define SCREEN_LEN_LONG_HALF SCREEN_LEN_LONG/2
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
@@ -190,12 +191,17 @@ void receiveMessage() {
       char* segment = strtok(message, " = ");         // tokenize message into segments
       int segmentIndex = 0;                           // segment's index in tokenized message
 
-      // update the slaves' based off message data
-      // Slave1
+      // message from Slave1.  TODO ensure that this is equivalent to the code below for Slave2
       if(source_addr.get_ip_address() == Slave1_Addr){
-        // check if slave is serving
-        if((strcmp(segment, "button") == 0) && (Ball_Coord_Current.x == BARRIER_LEFT)){
-          Ball_Direction = RIGHT;
+        // check if slave is trying to serve
+        if(strcmp(segment, "button") == 0){
+          if((Ball_Direction == STILL) && (Ball_Coord_Current.x == BARRIER_LEFT)){
+            // ball should now bounce right
+            Ball_Direction = RIGHT;
+
+            // fillLineBuffer with ball's new trajectory
+            fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_RIGHT, Ball_Coord_Current.y);
+          }
         }
 
         // update slave's angle value
@@ -210,11 +216,17 @@ void receiveMessage() {
         } 
       }
 
-      // Slave2
+      // message from Slave2.  TODO ensure that this is equivalent to the code above for Slave1
       else if(source_addr.get_ip_address() == Slave2_Addr){
-        // check if slave is serving
-        if((strcmp(segment, "button") == 0) && (Ball_Coord_Current.x == BARRIER_RIGHT)){
-          Ball_Direction = LEFT;
+        // check if slave is trying to serve
+        if(strcmp(segment, "button") == 0){
+          if((Ball_Direction == STILL) && (Ball_Coord_Current.x == BARRIER_RIGHT)){
+            // ball should now bounce left
+            Ball_Direction = LEFT;
+
+            // fillLineBuffer with ball's new trajectory
+            fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_LEFT, Ball_Coord_Current.y);
+          }
         }
 
         // update slave's angle value        
@@ -355,10 +367,10 @@ void game(void){
   TFT.drawBall(Ball_Coord_Prev.x, Ball_Coord_Prev.y, ST7735_GREEN); // erase ball's position from previous cycle
   
   // redraw centerline if necessary
-  if((Ball_Coord_Prev.x >= SCREEN_LEN_LONG/2 - 1) && (Ball_Coord_Prev.x <= SCREEN_LEN_LONG/2 +1)){
-    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y, ST7735_BLACK);
-    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y+1, ST7735_BLACK);
-    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y-1, ST7735_BLACK);
+  if((Ball_Coord_Prev.x >= SCREEN_LEN_LONG_HALF - 1) && (Ball_Coord_Prev.x <= SCREEN_LEN_LONG_HALF +1)){
+    TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y, ST7735_BLACK);
+    TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y+1, ST7735_BLACK);
+    TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y-1, ST7735_BLACK);
   }
 
   // calculate and draw paddles
@@ -467,6 +479,7 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
     // check if the ball hit the right paddle
     if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Direction = LEFT;
+      // TODO calculate the ball's new trajectory based on where it hit the paddle
     }
 
     // else if the ball scored a goal on right side of screen
@@ -495,6 +508,7 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
     // check if the ball hit the left paddle
     if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
       Ball_Direction = RIGHT;
+      // TODO calculate ball's new trajectory based on where it hit the paddle
     }
 
     // else if the ball scored a goal on the left side of screen
@@ -548,7 +562,7 @@ void myButton_isr() {
     Ball_Coord_Start.x = BARRIER_LEFT+1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG/2 - 50;
+    nextCoord.x = SCREEN_LEN_LONG_HALF;
     nextCoord.y = 0;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
