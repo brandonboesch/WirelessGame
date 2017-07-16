@@ -396,9 +396,8 @@ void game(void){
 // input:  ball_coord_current - the current coordinate of the ball
 // output: none
 // ***************************************************************
-bool first_call = true;
 void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_direction){
-  if((ball_coord_current.y == 0) && (ball_direction == RIGHT) && !first_call){
+  if((ball_coord_current.y == 0) && (ball_direction == RIGHT)){
     // calculate theta 
     double x = ball_coord_current.x - ball_coord_start.x;
     double y = ball_coord_start.y;
@@ -417,10 +416,9 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_di
     fillLineBuffer(ball_coord_current.x, ball_coord_current.y, newX, newY); 
 
   }
-  if((ball_coord_current.y == SCREEN_LEN_SHORT) && (ball_direction == RIGHT) && !first_call){
+  if((ball_coord_current.y == SCREEN_LEN_SHORT) && (ball_direction == RIGHT)){
     printf("made it to other side\n");
   }
-  first_call = false;
 }
 
 
