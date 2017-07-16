@@ -349,7 +349,7 @@ void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
     }
     Ball_Path_Q.put(ball_coord);  // fill Ball_Path_Q with balls new trajectory
     
-    printf(" x = %d, y = %d, Ball_Path_Q.available() = %lu, Ball_Path_Q.free = %lu\n",ball_coord.x, ball_coord.y, Ball_Path_Q.available(), Ball_Path_Q.free());  // TODO don't forget to comment out when not debuging
+   // printf(" fill coord x = %d, y = %d.\tBall_Path_Q.available() = %lu, Ball_Path_Q.free = %lu\n",ball_coord.x, ball_coord.y, Ball_Path_Q.available(), Ball_Path_Q.free());  // TODO don't forget to comment out when not debuging
     
     err -= dy;
     if (err < 0) {
