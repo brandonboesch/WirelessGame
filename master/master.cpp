@@ -353,6 +353,13 @@ void game(void){
   TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
   TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
   TFT.drawBall(Ball_Coord_Prev.x, Ball_Coord_Prev.y, ST7735_GREEN); // erase ball's position from previous cycle
+  
+  // redraw centerline if necessary
+  if((Ball_Coord_Prev.x >= SCREEN_LEN_LONG/2 - 1) && (Ball_Coord_Prev.x <= SCREEN_LEN_LONG/2 +1)){
+    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y, ST7735_BLACK);
+    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y+1, ST7735_BLACK);
+    TFT.drawPixel(SCREEN_LEN_LONG/2, Ball_Coord_Prev.y-1, ST7735_BLACK);
+  }
 
   // calculate and draw paddles
   float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
@@ -362,7 +369,8 @@ void game(void){
 
 
   // if the ball is moving
-  if(Ball_Direction != STILL){               
+  if(Ball_Direction != STILL){  
+
     // updates Ball_Coord_Current with next coordinate found in Q
     Ball_Path_Q.get(&Ball_Coord_Current);    
 
@@ -535,13 +543,12 @@ void myButton_isr() {
     // draw the field
     TFT.fillScreen(ST7735_GREEN);
     TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
-    TFT.drawCircle(80, 64, 10, ST7735_BLACK);
 
     // TODO drawing a line for debug. Needs to be removed before finished
     Ball_Coord_Start.x = BARRIER_LEFT+1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG/2 - 30;
+    nextCoord.x = SCREEN_LEN_LONG/2 - 50;
     nextCoord.y = 0;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
