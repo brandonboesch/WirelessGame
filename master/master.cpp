@@ -46,8 +46,9 @@
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define SCREEN_LEN_LONG_HALF SCREEN_LEN_LONG/2
-#define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
-#define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
+//#define ANGLE_DIV 0.0291         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
+#define ANGLE_DIV 0.0293         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 21
+#define PADDLE_SIZE 21           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 #define BARRIER_RIGHT (SCREEN_LEN_LONG-14)  // boundary on the right side of screen
 #define BARRIER_LEFT 13                     // boundary on the left side of screen
