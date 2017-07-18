@@ -49,10 +49,10 @@
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LENGTH_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 #define PADDLE_SIZE 20           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
-#define BARRIER_RIGHT (SCREEN_LEN_LONG-10)  // boundary on the right side of screen
-#define BARRIER_LEFT 10                     // boundary on the left side of screen
-#define LEFT_SCOREBOARD 0        // X coordinate for Slave1's scoreboard
-#define RIGHT_SCOREBOARD 155     // X coordinate for Slave2's scoreboard
+#define BARRIER_RIGHT (SCREEN_LEN_LONG-14)  // boundary on the right side of screen
+#define BARRIER_LEFT 13                     // boundary on the left side of screen
+#define LEFT_SCOREBOARD 0                   // X coordinate for Slave1's scoreboard
+#define RIGHT_SCOREBOARD BARRIER_RIGHT+2    // X coordinate for Slave2's scoreboard
 
 
 // ******************** GLOBALS *************************************
@@ -193,6 +193,7 @@ void receiveMessage() {
         if(strcmp(segment, "button") == 0){
           if((Ball_Still == true) && (Ball_Coord_Current.x == BARRIER_LEFT)){
             // serve ball to the right. fillLineBuffer with ball's new trajectory
+            Ball_Still = false;
             fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_RIGHT, Ball_Coord_Current.y);
           }
         }
@@ -215,6 +216,7 @@ void receiveMessage() {
         if(strcmp(segment, "button") == 0){
           if((Ball_Still == true) && (Ball_Coord_Current.x == BARRIER_RIGHT)){
             // serve ball to the left. fillLineBuffer with ball's new trajectory
+            Ball_Still = false;
             fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_LEFT, Ball_Coord_Current.y);
           }
         }
@@ -460,7 +462,7 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
       Slave1_Score++;
       char buff[8];
       itoa(Slave1_Score,buff,10);           
-      TFT.drawString(0, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      TFT.drawString(LEFT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);   
       
       // check for winning game condition
       if(Slave1_Score >= MAX_SCORE){
@@ -489,7 +491,7 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
       Slave2_Score++;
       char buff[8];
       itoa(Slave2_Score,buff,10);           
-      TFT.drawString(SCREEN_LEN_LONG-5, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+      TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);   
 
       // check for winning game condition
       if(Slave2_Score >= MAX_SCORE){
@@ -528,16 +530,16 @@ void myButton_isr() {
     Ball_Coord_Start.x = BARRIER_LEFT+1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG_HALF + 30;
+    nextCoord.x = SCREEN_LEN_LONG_HALF - 30;
     nextCoord.y = SCREEN_LEN_SHORT;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
     // draw the score board
     char buff[8];
     itoa(Slave1_Score,buff,10);           
-    TFT.drawString(LEFT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);   
+    TFT.drawString(LEFT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);   
     itoa(Slave2_Score,buff,10);
-    TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 1);    
+    TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);    
 
     // specify rate to rerun game() after button press. 
     Queue1.call_every(GAME_CALL_RATE,game);
