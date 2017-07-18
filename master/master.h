@@ -31,7 +31,7 @@ void pairSlaves();
 void fillLineBuffer(int16_t x0, int16_t y0, int16_t x1, int16_t y1);
 void goalCheck(float slave1_paddle_top, float slave2_paddle_top);
 void game(void);
-void wallCheck(Coord ball_coord_start, Coord ball_coord_current, uint8_t ball_direction);
+void wallCheck(Coord ball_coord_start, Coord ball_coord_current, bool ball_still);
   
 void socket_isr();
 void myButton_isr();
