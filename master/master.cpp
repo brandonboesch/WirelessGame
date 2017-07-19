@@ -82,17 +82,17 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = PI/2;                  // latest angle stored in system for Slave1
-int8_t Paddle1_Top_Prev = 0;                // top pixel for Paddle1's previous y coordinate
-int8_t Paddle1_Top_Current = 0;             // top pixel for Paddle1's current y coordinate
+float Paddle1_Top_Prev = 0;                // top pixel for Paddle1's previous y coordinate
+float Paddle1_Top_Current = 0;             // top pixel for Paddle1's current y coordinate
 uint8_t Slave1_Score = 0;                   // Slave1's score
 
 float Slave2_Angle = PI/2;                  // latest angle stored in system for Slave2
-int8_t Paddle2_Top_Prev = 0;                // top pixel for Paddle2's previous y coordinate
-int8_t Paddle2_Top_Current = 0;             // top pixel for Paddle2's current y coordinate
+float Paddle2_Top_Prev = 0;                // top pixel for Paddle2's previous y coordinate
+float Paddle2_Top_Current = 0;             // top pixel for Paddle2's current y coordinate
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
 bool Ball_Still = true;                     // true if ball is still, false if ball is moving
-bool Paddle_Hit = false;                    // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
+bool Paddle_Hit = true;                    // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
 // ******************************************************************
 
 
@@ -373,8 +373,8 @@ void game(void){
   }
 
   // calculate and draw paddles
-  float Paddle1_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV); // translate angle to pixel location
-  float Paddle2_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV); // translate angle to pixel location
+  Paddle1_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV); // translate angle to pixel location
+  Paddle2_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV); // translate angle to pixel location
   TFT.drawFastVLine(BARRIER_LEFT, Paddle1_Top_Current, PADDLE_SIZE, ST7735_BLACK);  // draw Paddle1
   TFT.drawFastVLine(BARRIER_RIGHT, Paddle2_Top_Current, PADDLE_SIZE, ST7735_BLACK); // draw Paddle2
 
@@ -457,7 +457,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
     if((Ball_Coord_Current.y >= paddle2_top_current) && (Ball_Coord_Current.y <= paddle2_top_current + PADDLE_SIZE)){
       // find where on paddle the ball hit
       Paddle_Hit = true;
-      uint8_t index = (Ball_Coord_Current.y - paddle2_top_current) + 2; // +2 to make 2-indexed
+      uint8_t index = (Ball_Coord_Current.y - paddle2_top_current) + 1; // +1 to make 1-indexed
 
       // calculate theta using equation
       float theta = ANGLE_MULT * index;
@@ -465,7 +465,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       // use theta to determine next coordinate. See notebook
       Coord destination = {0,0};                    // will hold the ball's new ending coordinate
       if(index < PADDLE_SIZE/2 + 1){
-        destination.x = Ball_Coord_Current.x - (Ball_Coord_Start.y * tan(theta));
+        destination.x = Ball_Coord_Current.x - abs(Ball_Coord_Start.y * tan(theta));
         destination.y = 0;
       }
       else if(index == PADDLE_SIZE/2 + 1){
@@ -482,7 +482,6 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
 
       // fill up the Ball_Path_Q with new trajectory
       fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, destination.x, destination.y); 
-      printf("index = %d, theta = %f, destination.x = %d, destination.y = %d\n", index, theta, destination.x, destination.y);
     }
 
     // else if the ball scored a goal on right side of screen
@@ -512,7 +511,13 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
     if((Ball_Coord_Current.y >= paddle1_top_current) && (Ball_Coord_Current.y <= paddle1_top_current + PADDLE_SIZE)){
       // find where on paddle the ball hit
       Paddle_Hit = true;
-      uint8_t index = (Ball_Coord_Current.y - paddle1_top_current) + 2; // +2 to make 2-indexed
+      uint8_t index = (Ball_Coord_Current.y - paddle1_top_current) + 1; // +1 to make 1-indexed
+      if(index == 1){
+        index++;
+      }
+      else if(index == 21){
+        index = 20;
+      }
 
       // calculate theta using equation
       float theta = ANGLE_MULT * index;
@@ -520,7 +525,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       // use theta to determine next coordinate. See notebook
       Coord destination = {0,0};                    // will hold the ball's new ending coordinate
       if(index < PADDLE_SIZE/2 + 1){
-        destination.x = (Ball_Coord_Start.y * tan(theta)) + Ball_Coord_Current.x;
+        destination.x = abs(Ball_Coord_Start.y * tan(theta)) + Ball_Coord_Current.x;
         destination.y = 0;
       }
       else if(index == PADDLE_SIZE/2 + 1){
@@ -538,7 +543,6 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
 
       // fill up the Ball_Path_Q with new trajectory
       fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, destination.x, destination.y); 
-      printf("index = %d, theta = %f, destination.x = %d, destination.y = %d\n", index, theta, destination.x, destination.y);
     }
 
     // else if the ball scored a goal on the left side of screen
@@ -588,18 +592,7 @@ void myButton_isr() {
 
     // player1 starts with the ball
     Ball_Coord_Current.x = BARRIER_LEFT;
-
-    // FIXME drawing a line for debug. Needs to be removed before finished    
-    Ball_Still = false;
-    Ball_Coord_Current.x = BARRIER_LEFT + 1;
-    Ball_Coord_Start.x = BARRIER_LEFT + 1;
-    Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
-    Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG_HALF;
-    //nextCoord.y = 0;
-    nextCoord.y = SCREEN_LEN_SHORT;
-    fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
-
+    
     // draw the score board
     char buff[8];
     itoa(Slave1_Score,buff,10);           
