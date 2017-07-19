@@ -420,15 +420,15 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, bool ball_still
     Coord destination = {0,0};                    // will hold the ball's new ending coordinate
     
     // calculate theta 
-    double x = ball_coord_current.x - ball_coord_start.x;
+    double x = abs(ball_coord_current.x - ball_coord_start.x);
     double y = (ball_coord_current.y == 0) ? ball_coord_start.y : (SCREEN_LEN_SHORT - ball_coord_start.y);
 
     //double y = (ball_coord_current.y == 0) ? ball_coord_start.y : ball_coord_current.y;
     double theta = atan(y/x);
        
     // calculate location of next point. By law of reflection, will have same angle as theta
-    destination.x = (SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x;
-    destination.y = (ball_coord_current.y == 0) ? SCREEN_LEN_SHORT : 0;
+    destination.x = (ball_coord_current.x > ball_coord_start.x) ? ((SCREEN_LEN_SHORT / tan(theta)) + ball_coord_current.x) : (ball_coord_current.x - (SCREEN_LEN_SHORT / tan(theta))); // determines if ball is moving from right or left
+    destination.y = (ball_coord_current.y == 0) ? SCREEN_LEN_SHORT : 0; 
     
     // update start location
     Ball_Coord_Start.x = ball_coord_current.x;
@@ -535,11 +535,12 @@ void myButton_isr() {
 
     // FIXME drawing a line for debug. Needs to be removed before finished    
     Ball_Still = false;
-    Ball_Coord_Current.x = BARRIER_LEFT + 1;
-    Ball_Coord_Start.x = BARRIER_LEFT + 1;
+    Ball_Coord_Current.x = BARRIER_RIGHT - 1;
+    Ball_Coord_Start.x = BARRIER_RIGHT -1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
     nextCoord.x = SCREEN_LEN_LONG_HALF;
+    //nextCoord.y = 0;
     nextCoord.y = SCREEN_LEN_SHORT;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
