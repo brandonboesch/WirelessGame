@@ -416,13 +416,14 @@ void game(void){
 // output: none
 // ***************************************************************
 void wallCheck(Coord ball_coord_start, Coord ball_coord_current, bool ball_still){
-  // check whether the ball hit the ceiling. TODO make equivalent to the y == floor version
   if(ball_coord_current.y == 0 || ball_coord_current.y == SCREEN_LEN_SHORT){
     Coord destination = {0,0};                    // will hold the ball's new ending coordinate
     
     // calculate theta 
     double x = ball_coord_current.x - ball_coord_start.x;
-    double y = (ball_coord_current.y == 0) ? ball_coord_start.y : ball_coord_current.y;
+    double y = (ball_coord_current.y == 0) ? ball_coord_start.y : (SCREEN_LEN_SHORT - ball_coord_start.y);
+
+    //double y = (ball_coord_current.y == 0) ? ball_coord_start.y : ball_coord_current.y;
     double theta = atan(y/x);
        
     // calculate location of next point. By law of reflection, will have same angle as theta
@@ -534,6 +535,7 @@ void myButton_isr() {
 
     // FIXME drawing a line for debug. Needs to be removed before finished    
     Ball_Still = false;
+    Ball_Coord_Current.x = BARRIER_LEFT + 1;
     Ball_Coord_Start.x = BARRIER_LEFT + 1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
