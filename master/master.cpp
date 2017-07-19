@@ -48,6 +48,7 @@
 #define SCREEN_LEN_LONG_HALF SCREEN_LEN_LONG/2
 //#define ANGLE_DIV 0.0291         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 #define ANGLE_DIV 0.0293         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 21
+#define ANGLE_MULT 0.1428        // Multiplier used to calculate paddle bounce. (PI/2) / (PADDLE_SIZE/2) = 0.1428
 #define PADDLE_SIZE 21           // length of player's paddle. Update ANGLE_DIV if changes.
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 #define BARRIER_RIGHT (SCREEN_LEN_LONG-14)  // boundary on the right side of screen
@@ -422,8 +423,6 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, bool ball_still
     // calculate theta 
     double x = abs(ball_coord_current.x - ball_coord_start.x);
     double y = (ball_coord_current.y == 0) ? ball_coord_start.y : (SCREEN_LEN_SHORT - ball_coord_start.y);
-
-    //double y = (ball_coord_current.y == 0) ? ball_coord_start.y : ball_coord_current.y;
     double theta = atan(y/x);
        
     // calculate location of next point. By law of reflection, will have same angle as theta
@@ -458,10 +457,10 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
 
     // else if the ball scored a goal on right side of screen
     else{
-      Ball_Still = true;                       // ball should stop after goal and get reset on paddle. 
       // erase ball's current location. Will get updated in game() since ball is still now
       TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
-  
+      Ball_Still = true;                       // ball should stop after goal and get reset on paddle. 
+
       // update score
       Slave1_Score++;
       char buff[8];
@@ -482,14 +481,24 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
     // check if the ball hit the left paddle
     if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
       // TODO calculate ball's new trajectory based on where it hit the paddle
+      
+      // find where on paddle the ball hit
+      uint8_t index = (Ball_Coord_Current.y - Slave1_Old_Paddle_Top);
+
+      // calculate theta using equation
+      float theta = ANGLE_MULT * index;
+
+      // use theta to determine next coordinate. See notebook
+        
+
+      printf("index = %d, theta = %f\n", index, theta);
     }
 
     // else if the ball scored a goal on the left side of screen
     else{
-      Ball_Still = true;                  // ball should stop after goal and get reset on paddle. 
-
       // erase ball's current location. Will get updated in game() since ball is still now
       TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_GREEN);  
+      Ball_Still = true;                  // ball should stop after goal and get reset on paddle. 
 
       // update score
       Slave2_Score++;
