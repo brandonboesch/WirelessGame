@@ -465,7 +465,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       // use theta to determine next coordinate. See notebook
       Coord destination = {0,0};                    // will hold the ball's new ending coordinate
       if(index < PADDLE_SIZE/2 + 1){
-        destination.x = Ball_Coord_Current.x - abs(Ball_Coord_Start.y * tan(theta));
+        destination.x = Ball_Coord_Current.x - abs(Ball_Coord_Current.y * tan(theta));
         destination.y = 0;
       }
       else if(index == PADDLE_SIZE/2 + 1){
@@ -476,6 +476,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
         destination.x = Ball_Coord_Current.x - abs((SCREEN_LEN_SHORT - Ball_Coord_Current.y) * tan(theta));
         destination.y = SCREEN_LEN_SHORT;
       }
+      
       // update start location
       Ball_Coord_Start.x = Ball_Coord_Current.x;
       Ball_Coord_Start.y = Ball_Coord_Current.y;
@@ -525,7 +526,7 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       // use theta to determine next coordinate. See notebook
       Coord destination = {0,0};                    // will hold the ball's new ending coordinate
       if(index < PADDLE_SIZE/2 + 1){
-        destination.x = abs(Ball_Coord_Start.y * tan(theta)) + Ball_Coord_Current.x;
+        destination.x = abs(Ball_Coord_Current.y * tan(theta)) + Ball_Coord_Current.x;
         destination.y = 0;
       }
       else if(index == PADDLE_SIZE/2 + 1){
