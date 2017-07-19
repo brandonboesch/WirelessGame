@@ -46,10 +46,9 @@
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define SCREEN_LEN_LONG_HALF SCREEN_LEN_LONG/2
-//#define ANGLE_DIV 0.0291         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
-#define ANGLE_DIV 0.0293         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 21
+#define ANGLE_DIV 0.0291         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 #define ANGLE_MULT 0.1428        // Multiplier used to calculate paddle bounce. (PI/2) / (PADDLE_SIZE/2) = 0.1428
-#define PADDLE_SIZE 21           // length of player's paddle. Update ANGLE_DIV if changes.
+#define PADDLE_SIZE 20     // actuall size is +1 of defined, due to drawline()). Update ANGLE_DIV if changes. 
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 #define BARRIER_RIGHT (SCREEN_LEN_LONG-14)  // boundary on the right side of screen
 #define BARRIER_LEFT 13                     // boundary on the left side of screen
@@ -83,14 +82,17 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = PI/2;                  // latest angle stored in system for Slave1
-int8_t Slave1_Old_Paddle_Top = 0;           // top pixel for slave1's previous paddle              
+int8_t Paddle1_Top_Prev = 0;                // top pixel for Paddle1's previous y coordinate
+int8_t Paddle1_Top_Current = 0;             // top pixel for Paddle1's current y coordinate
 uint8_t Slave1_Score = 0;                   // Slave1's score
 
 float Slave2_Angle = PI/2;                  // latest angle stored in system for Slave2
-int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
+int8_t Paddle2_Top_Prev = 0;                // top pixel for Paddle2's previous y coordinate
+int8_t Paddle2_Top_Current = 0;             // top pixel for Paddle2's current y coordinate
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
-bool Ball_Still = true;                    // true if ball is still, false if ball is moving
+bool Ball_Still = true;                     // true if ball is still, false if ball is moving
+bool Paddle_Hit = false;                    // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
 // ******************************************************************
 
 
@@ -358,22 +360,23 @@ void fillLineBuffer(int16_t x1, int16_t y1, int16_t x2, int16_t y2) {
 // ***************************************************************
 void game(void){
   //erase old objects on screen
-  TFT.drawFastVLine(BARRIER_LEFT, Slave1_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);    // erase Slave1's paddle
-  TFT.drawFastVLine(BARRIER_RIGHT, Slave2_Old_Paddle_Top, PADDLE_SIZE, ST7735_GREEN);   // erase Slave2's paddle
+  TFT.drawFastVLine(BARRIER_LEFT, Paddle1_Top_Prev, PADDLE_SIZE, ST7735_GREEN);    // erase Paddle1
+  TFT.drawFastVLine(BARRIER_RIGHT, Paddle2_Top_Prev, PADDLE_SIZE, ST7735_GREEN);   // erase Paddle2
   TFT.drawBall(Ball_Coord_Prev.x, Ball_Coord_Prev.y, ST7735_GREEN); // erase ball's position from previous cycle
   
   // redraw centerline if necessary
   if((Ball_Coord_Prev.x >= SCREEN_LEN_LONG_HALF - 1) && (Ball_Coord_Prev.x <= SCREEN_LEN_LONG_HALF +1)){
+    Paddle_Hit = false;                                                            // reset paddle hit 
     TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y, ST7735_BLACK);
     TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y+1, ST7735_BLACK);
     TFT.drawPixel(SCREEN_LEN_LONG_HALF, Ball_Coord_Prev.y-1, ST7735_BLACK);
   }
 
   // calculate and draw paddles
-  float slave1_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV);    // translate angle to pixel location
-  float slave2_paddle_top = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV);    // translate angle to pixel location
-  TFT.drawFastVLine(BARRIER_LEFT, slave1_paddle_top, PADDLE_SIZE, ST7735_BLACK);  // draw Slave1's paddle
-  TFT.drawFastVLine(BARRIER_RIGHT, slave2_paddle_top, PADDLE_SIZE, ST7735_BLACK); // draw Slave2's paddle
+  float Paddle1_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave1_Angle)/ANGLE_DIV); // translate angle to pixel location
+  float Paddle2_Top_Current = SCREEN_MINUS_PADDLE-(abs(Slave2_Angle)/ANGLE_DIV); // translate angle to pixel location
+  TFT.drawFastVLine(BARRIER_LEFT, Paddle1_Top_Current, PADDLE_SIZE, ST7735_BLACK);  // draw Paddle1
+  TFT.drawFastVLine(BARRIER_RIGHT, Paddle2_Top_Current, PADDLE_SIZE, ST7735_BLACK); // draw Paddle2
 
 
   // if the ball is moving
@@ -383,7 +386,7 @@ void game(void){
     Ball_Path_Q.get(&Ball_Coord_Current);    
 
     // determine if a goal was made, or if the ball hit a paddle
-    goalCheck(slave1_paddle_top, slave2_paddle_top);
+    goalCheck(Paddle1_Top_Current, Paddle2_Top_Current);
 
     // check if the ball hit any walls.
     wallCheck(Ball_Coord_Start, Ball_Coord_Current, Ball_Still);
@@ -392,11 +395,11 @@ void game(void){
   // else if ball is still
   else if (Ball_Still == true){         
     // ball needs to be placed on the center of the closest paddle
-    if(Ball_Coord_Current.x == BARRIER_RIGHT){                     // if ball is on the right side 
-      Ball_Coord_Current.y = slave2_paddle_top + (PADDLE_SIZE/2);  // place ball in center of right paddle
+    if(Ball_Coord_Current.x == BARRIER_RIGHT){                      // if ball is on the right side 
+      Ball_Coord_Current.y = Paddle2_Top_Current + (PADDLE_SIZE/2); // place ball in center of right paddle
     }
-    else if(Ball_Coord_Current.x == BARRIER_LEFT){                 // else if ball is on the left side
-      Ball_Coord_Current.y = slave1_paddle_top + (PADDLE_SIZE/2);  // place ball in center of right paddle
+    else if(Ball_Coord_Current.x == BARRIER_LEFT){                  // else if ball is on the left side
+      Ball_Coord_Current.y = Paddle1_Top_Current + (PADDLE_SIZE/2); // place ball in center of right paddle
     }
   }
 
@@ -404,8 +407,8 @@ void game(void){
   TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);     // draw ball to screen
   
   // update objects' old values
-  Slave1_Old_Paddle_Top = slave1_paddle_top;        // update Slave1's old pixel
-  Slave2_Old_Paddle_Top = slave2_paddle_top;        // update old pixel
+  Paddle1_Top_Prev = Paddle1_Top_Current;           // update Paddle1's previous pixel
+  Paddle2_Top_Prev = Paddle2_Top_Current;           // update Paddle2's previous pixel
   Ball_Coord_Prev = Ball_Coord_Current;             // update ball's old coordinates
 }
 
@@ -445,14 +448,41 @@ void wallCheck(Coord ball_coord_start, Coord ball_coord_current, bool ball_still
 //         slave2_paddle_top - the top pixel for slave2's paddle
 // output: none
 // ***************************************************************
-void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
+void goalCheck(float paddle1_top_current, float paddle2_top_current){
   // TODO make sure below is similar for both cases
   // check if the ball reached the barrier on the right side of the screen 
-  if(Ball_Coord_Current.x == BARRIER_RIGHT){
-    Ball_Path_Q.reset();                       // empty out path Q
+  if((Ball_Coord_Current.x == BARRIER_RIGHT) && (Paddle_Hit == false)){
+    Ball_Path_Q.reset();                       // empty out ball's path queue
     // check if the ball hit the right paddle
-    if((Ball_Coord_Current.y >= Slave2_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave2_Old_Paddle_Top + PADDLE_SIZE)){
-      // TODO calculate the ball's new trajectory based on where it hit the paddle
+    if((Ball_Coord_Current.y >= paddle2_top_current) && (Ball_Coord_Current.y <= paddle2_top_current + PADDLE_SIZE)){
+      // find where on paddle the ball hit
+      Paddle_Hit = true;
+      uint8_t index = (Ball_Coord_Current.y - paddle2_top_current) + 2; // +2 to make 2-indexed
+
+      // calculate theta using equation
+      float theta = ANGLE_MULT * index;
+
+      // use theta to determine next coordinate. See notebook
+      Coord destination = {0,0};                    // will hold the ball's new ending coordinate
+      if(index < PADDLE_SIZE/2 + 1){
+        destination.x = Ball_Coord_Current.x - (Ball_Coord_Start.y * tan(theta));
+        destination.y = 0;
+      }
+      else if(index == PADDLE_SIZE/2 + 1){
+        destination.x = BARRIER_LEFT;
+        destination.y = Ball_Coord_Current.y;
+      }
+      else if(index > PADDLE_SIZE/2 + 1){
+        destination.x = Ball_Coord_Current.x - abs((SCREEN_LEN_SHORT - Ball_Coord_Current.y) * tan(theta));
+        destination.y = SCREEN_LEN_SHORT;
+      }
+      // update start location
+      Ball_Coord_Start.x = Ball_Coord_Current.x;
+      Ball_Coord_Start.y = Ball_Coord_Current.y;
+
+      // fill up the Ball_Path_Q with new trajectory
+      fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, destination.x, destination.y); 
+      printf("index = %d, theta = %f, destination.x = %d, destination.y = %d\n", index, theta, destination.x, destination.y);
     }
 
     // else if the ball scored a goal on right side of screen
@@ -476,22 +506,39 @@ void goalCheck(float slave1_paddle_top, float slave2_paddle_top){
 
   // TODO make sure above is similar for both cases
   // else if the ball reached the barrier on the left side of the screen 
-  else if(Ball_Coord_Current.x == BARRIER_LEFT){
-    Ball_Path_Q.reset();                       // empty out path Q
+  else if((Ball_Coord_Current.x == BARRIER_LEFT) && (Paddle_Hit == false)){
+    Ball_Path_Q.reset();                       // empty out ball's path queue
     // check if the ball hit the left paddle
-    if((Ball_Coord_Current.y >= Slave1_Old_Paddle_Top) && (Ball_Coord_Current.y <= Slave1_Old_Paddle_Top + PADDLE_SIZE)){
-      // TODO calculate ball's new trajectory based on where it hit the paddle
-      
+    if((Ball_Coord_Current.y >= paddle1_top_current) && (Ball_Coord_Current.y <= paddle1_top_current + PADDLE_SIZE)){
       // find where on paddle the ball hit
-      uint8_t index = (Ball_Coord_Current.y - Slave1_Old_Paddle_Top);
+      Paddle_Hit = true;
+      uint8_t index = (Ball_Coord_Current.y - paddle1_top_current) + 2; // +2 to make 2-indexed
 
       // calculate theta using equation
       float theta = ANGLE_MULT * index;
 
       // use theta to determine next coordinate. See notebook
-        
+      Coord destination = {0,0};                    // will hold the ball's new ending coordinate
+      if(index < PADDLE_SIZE/2 + 1){
+        destination.x = (Ball_Coord_Start.y * tan(theta)) + Ball_Coord_Current.x;
+        destination.y = 0;
+      }
+      else if(index == PADDLE_SIZE/2 + 1){
+        destination.x = BARRIER_RIGHT;
+        destination.y = Ball_Coord_Current.y;
+      }
+      else if(index > PADDLE_SIZE/2 + 1){
+        destination.x = abs((SCREEN_LEN_SHORT - Ball_Coord_Current.y) * tan(theta)) + Ball_Coord_Current.x;
+        destination.y = SCREEN_LEN_SHORT;
+      }
 
-      printf("index = %d, theta = %f\n", index, theta);
+      // update start location
+      Ball_Coord_Start.x = Ball_Coord_Current.x;
+      Ball_Coord_Start.y = Ball_Coord_Current.y;
+
+      // fill up the Ball_Path_Q with new trajectory
+      fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, destination.x, destination.y); 
+      printf("index = %d, theta = %f, destination.x = %d, destination.y = %d\n", index, theta, destination.x, destination.y);
     }
 
     // else if the ball scored a goal on the left side of screen
@@ -544,8 +591,8 @@ void myButton_isr() {
 
     // FIXME drawing a line for debug. Needs to be removed before finished    
     Ball_Still = false;
-    Ball_Coord_Current.x = BARRIER_RIGHT - 1;
-    Ball_Coord_Start.x = BARRIER_RIGHT -1;
+    Ball_Coord_Current.x = BARRIER_LEFT + 1;
+    Ball_Coord_Start.x = BARRIER_LEFT + 1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
     nextCoord.x = SCREEN_LEN_LONG_HALF;
