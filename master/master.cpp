@@ -89,7 +89,7 @@ float Slave2_Angle = PI/2;                  // latest angle stored in system for
 int8_t Slave2_Old_Paddle_Top = 0;           // top pixel for slave2's previous paddle 
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
-bool Ball_Still = false;                    // true if ball is still, false if ball is moving
+bool Ball_Still = true;                    // true if ball is still, false if ball is moving
 // ******************************************************************
 
 
@@ -183,7 +183,7 @@ void receiveMessage() {
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
     if (length > 0) {
       // split broadcasted message into segments using tokens 
-      printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
+      //printf("Receiving packet from %s: %s\n",source_addr.get_ip_address()+IP_LAST4_OFFSET,ReceiveBuffer);
       char* message = (char*)ReceiveBuffer;           // convert ReceiveBuffer into a string.
       char* segment = strtok(message, " = ");         // tokenize message into segments
       int segmentIndex = 0;                           // segment's index in tokenized message
@@ -194,7 +194,8 @@ void receiveMessage() {
         if(strcmp(segment, "button") == 0){
           if((Ball_Still == true) && (Ball_Coord_Current.x == BARRIER_LEFT)){
             // serve ball to the right. fillLineBuffer with ball's new trajectory
-            Ball_Still = false;
+            Ball_Still = false;                       // stop ball
+            Ball_Coord_Start = Ball_Coord_Current;    // update start coordinates
             fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_RIGHT, Ball_Coord_Current.y);
           }
         }
@@ -217,7 +218,8 @@ void receiveMessage() {
         if(strcmp(segment, "button") == 0){
           if((Ball_Still == true) && (Ball_Coord_Current.x == BARRIER_RIGHT)){
             // serve ball to the left. fillLineBuffer with ball's new trajectory
-            Ball_Still = false;
+            Ball_Still = false;                       // stop ball
+            Ball_Coord_Start = Ball_Coord_Current;    // update start coordinates
             fillLineBuffer(Ball_Coord_Current.x, Ball_Coord_Current.y, BARRIER_LEFT, Ball_Coord_Current.y);
           }
         }
@@ -527,11 +529,15 @@ void myButton_isr() {
     TFT.fillScreen(ST7735_GREEN);
     TFT.drawFastVLine(80, 0, 128, ST7735_BLACK);
 
-    // TODO drawing a line for debug. Needs to be removed before finished
-    Ball_Coord_Start.x = BARRIER_LEFT+1;
+    // player1 starts with the ball
+    Ball_Coord_Current.x = BARRIER_LEFT;
+
+    // FIXME drawing a line for debug. Needs to be removed before finished    
+    Ball_Still = false;
+    Ball_Coord_Start.x = BARRIER_LEFT + 1;
     Ball_Coord_Start.y = SCREEN_LEN_SHORT/2;
     Coord nextCoord;
-    nextCoord.x = SCREEN_LEN_LONG_HALF - 30;
+    nextCoord.x = SCREEN_LEN_LONG_HALF;
     nextCoord.y = SCREEN_LEN_SHORT;
     fillLineBuffer(Ball_Coord_Start.x, Ball_Coord_Start.y, nextCoord.x, nextCoord.y);
 
