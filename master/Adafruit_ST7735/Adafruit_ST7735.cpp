@@ -330,6 +330,75 @@ void Adafruit_ST7735::drawPixel(int16_t x, int16_t y, uint16_t color)
 }
 
 
+//------------ST7735_DrawBitmap------------
+// Displays a 16-bit color BMP image.  A bitmap file that is created
+// by a PC image processing program has a header and may be padded
+// with dummy columns so the data have four byte alignment.  This
+// function assumes that all of that has been stripped out, and the
+// array image[] has one 16-bit halfword for each pixel to be
+// displayed on the screen (encoded in reverse order, which is
+// standard for bitmap files).  An array can be created in this
+// format from a 24-bit-per-pixel .bmp file using the associated
+// converter program.
+// (x,y) is the screen location of the lower left corner of BMP image
+// Requires (11 + 2*w*h) bytes of transmission (assuming image fully on screen)
+// Input: x     horizontal position of the bottom left corner of the image, columns from the left edge
+//        y     vertical position of the bottom left corner of the image, rows from the top edge
+//        image pointer to a 16-bit color BMP image
+//        w     number of pixels wide
+//        h     number of pixels tall
+// Output: none
+// Must be less than or equal to 128 pixels wide by 160 pixels high
+void Adafruit_ST7735::bitmap(int16_t x, int16_t y, const uint16_t *image, int16_t w, int16_t h){
+  int16_t skipC = 0;                      // non-zero if columns need to be skipped due to clipping
+  int16_t originalWidth = w;              // save this value; even if not all columns fit on the screen, the image is still this width in ROM
+  int i = w*(h - 1);
+
+  if((x >= _width) || ((y - h + 1) >= _height) || ((x + w) <= 0) || (y < 0)){
+    return;                             // image is totally off the screen, do nothing
+  }
+  if((w > _width) || (h > _height)){    // image is too wide for the screen, do nothing
+    //***This isn't necessarily a fatal error, but it makes the
+    //following logic much more complicated, since you can have
+    //an image that exceeds multiple boundaries and needs to be
+    //clipped on more than one side.
+    return;
+  }
+  if((x + w - 1) >= _width){            // image exceeds right of screen
+    skipC = (x + w) - _width;           // skip cut off columns
+    w = _width - x;
+  }
+  if((y - h + 1) < 0){                  // image exceeds top of screen
+    i = i - (h - y - 1)*originalWidth;  // skip the last cut off rows
+    h = y + 1;
+  }
+  if(x < 0){                            // image exceeds left of screen
+    w = w + x;
+    skipC = -1*x;                       // skip cut off columns
+    i = i - x;                          // skip the first cut off columns
+    x = 0;
+  }
+  if(y >= _height){                     // image exceeds bottom of screen
+    h = h - (y - _height + 1);
+    y = _height - 1;
+  }
+
+  setAddrWindow(x, y-h+1, x+w-1, y);
+
+  for(y=0; y<h; y=y+1){
+    for(x=0; x<w; x=x+1){
+                                        // send the top 8 bits
+      writedata((uint8_t)(image[i] >> 8));
+                                        // send the bottom 8 bits
+      writedata((uint8_t)image[i]);
+      i = i + 1;                        // go to the next pixel
+    }
+    i = i + skipC;
+    i = i - 2*originalWidth;
+  }
+}
+
+
 void Adafruit_ST7735::drawFastVLine(int16_t x, int16_t y, int16_t h,
                                     uint16_t color)
 {

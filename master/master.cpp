@@ -41,7 +41,7 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
-#define MAX_SCORE 5
+#define MAX_SCORE 9
 #define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
@@ -93,6 +93,7 @@ uint8_t Slave2_Score = 0;                   // Slave2's score
 
 bool Ball_Still = true;                     // true if ball is still, false if ball is moving
 bool Paddle_Hit = true;                    // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
+
 // ******************************************************************
 
 
@@ -118,7 +119,8 @@ int main(void){
   TFT.setRotation(3);
   TFT.fillScreen(ST7735_BLACK);
   TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
-
+  TFT.bitmap(0, 128, test, 160, 128); // TODO remove after debug
+  
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
   TFT.drawString(0, 40, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);
@@ -136,7 +138,7 @@ int main(void){
   TFT.drawString(80, 40, (unsigned char*)("Success!"), ST7735_GREEN, ST7735_BLACK, 1);
   cancel_blinking();
   start_blinking(0.5, "green");
- 
+
   // initialize the network socket
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   MySocket = new UDPSocket(&mesh);
@@ -154,7 +156,7 @@ int main(void){
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
-  Queue1.dispatch();                           
+  Queue1.dispatch();  
 }
 
 
