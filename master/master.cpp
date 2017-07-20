@@ -41,7 +41,7 @@
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35
 #define MAX_NUM_SLAVES 4
-#define MAX_SCORE 9
+#define MAX_SCORE 1
 #define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
@@ -82,23 +82,23 @@ uint8_t ReceiveBuffer[COMM_BUFF_SIZE];      // buffer that holds transmissions
 bool Init_Mode = true;                      // determines wheter in init mode or game mode
 
 float Slave1_Angle = PI/2;                  // latest angle stored in system for Slave1
-float Paddle1_Top_Prev = 0;                // top pixel for Paddle1's previous y coordinate
-float Paddle1_Top_Current = 0;             // top pixel for Paddle1's current y coordinate
+float Paddle1_Top_Prev = 0;                 // top pixel for Paddle1's previous y coordinate
+float Paddle1_Top_Current = 0;              // top pixel for Paddle1's current y coordinate
 uint8_t Slave1_Score = 0;                   // Slave1's score
 
 float Slave2_Angle = PI/2;                  // latest angle stored in system for Slave2
-float Paddle2_Top_Prev = 0;                // top pixel for Paddle2's previous y coordinate
-float Paddle2_Top_Current = 0;             // top pixel for Paddle2's current y coordinate
+float Paddle2_Top_Prev = 0;                 // top pixel for Paddle2's previous y coordinate
+float Paddle2_Top_Current = 0;              // top pixel for Paddle2's current y coordinate
 uint8_t Slave2_Score = 0;                   // Slave2's score
 
 bool Ball_Still = true;                     // true if ball is still, false if ball is moving
-bool Paddle_Hit = true;                    // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
+bool Paddle_Hit = true;                     // true after a paddle is hit. resets when x == SCREEN_LEN_LONG/2
+
 
 // ******************************************************************
 
 
 // ****************** FUNCTIONS ***********************************
-
 
 // ******** main() *******************************************
 // about:  Initializes a new socket using UDP, configures button interrupts, 
@@ -504,9 +504,10 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       itoa(Slave1_Score,buff,10);           
       TFT.drawString(LEFT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);   
       
-      // check for winning game condition
+      // check if player 1 won the game
       if(Slave1_Score >= MAX_SCORE){
-        // Slave1 wins
+        Queue1.break_dispatch();
+        gameOver(1);
       }
     }
   }
@@ -565,12 +566,27 @@ void goalCheck(float paddle1_top_current, float paddle2_top_current){
       itoa(Slave2_Score,buff,10);           
       TFT.drawString(RIGHT_SCOREBOARD, 0, (unsigned char*)(buff), ST7735_WHITE, ST7735_BLACK, 2);   
 
-      // check for winning game condition
+      // check if player 2 won the game
       if(Slave2_Score >= MAX_SCORE){
-        // Slave2 wins
+        Queue1.break_dispatch();
+        gameOver(2);
       }
     }
   }
+}
+
+
+// ******** gameOver() *******************************************
+// about:  Called once the game is over
+// input:  winner - the player number that won
+// output: none
+// ******************************************************************
+void gameOver(uint8_t playerNumber){
+  wait(1);
+  TFT.bitmap(0, 128, gameover, 160, 128);
+  char winner[16];
+  sprintf(winner, "Player%u Wins!", playerNumber);
+  TFT.drawString(00, 0, (unsigned char*)winner, ST7735_BLACK, ST7735_WHITE, 2);
 }
 
 
