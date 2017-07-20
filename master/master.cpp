@@ -118,9 +118,9 @@ int main(void){
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
   TFT.fillScreen(ST7735_BLACK);
-  TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
   TFT.bitmap(0, 128, test, 160, 128); // TODO remove after debug
-  
+  TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
+    
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
   TFT.drawString(0, 40, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);

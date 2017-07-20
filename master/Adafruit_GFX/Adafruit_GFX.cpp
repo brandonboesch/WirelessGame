@@ -48,6 +48,11 @@ Adafruit_GFX::Adafruit_GFX(int16_t w, int16_t h): WIDTH(w), HEIGHT(h) {
 }
 
 
+inline uint16_t swapcolor(uint16_t x) { 
+  return (x << 11) | (x & 0x07E0) | (x >> 11);
+}
+
+
 // draw a circle outline
 void Adafruit_GFX::drawCircle(int16_t x0, int16_t y0, int16_t r, 
                   uint16_t color) {
@@ -417,6 +422,7 @@ int Adafruit_GFX::_getc() {
 // draw a string
 void Adafruit_GFX::drawString(int16_t x, int16_t y,unsigned char *pt, 
                               uint16_t color, uint16_t bg, uint8_t size){
+  color = swapcolor(color);
   this->cursor_x = x;
   this->cursor_y = y;
   this->textcolor = color;
