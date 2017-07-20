@@ -117,28 +117,30 @@ int main(void){
   // setup the display
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
+
+  // draw titlescreens
   TFT.bitmap(0, 128, ARMmbed, 160, 128);
   wait(2);
   TFT.bitmap(0, 128, presents, 160, 128);
   wait(2);
   TFT.fillScreen(ST7735_BLACK);
-  TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
+  TFT.bitmap(0, 128, titleScreen, 160, 128); 
     
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
-  TFT.drawString(0, 40, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);
+  TFT.drawString(0, 70, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);
   mesh.initialize(&rf_phy);
   int error=-1;
   if((error=mesh.connect())){
     printf("Connection failed! %d\n", error);
-    TFT.drawString(80, 40, (unsigned char*)("Failed!"), ST7735_RED, ST7735_BLACK, 1);
+    TFT.drawString(80, 70, (unsigned char*)("Failed!"), ST7735_RED, ST7735_BLACK, 1);
     return error;
   }
   while(NULL == mesh.get_ip_address()){
     Thread::wait(500);
   }
   printf("connected. IP = %s\n", mesh.get_ip_address());
-  TFT.drawString(80, 40, (unsigned char*)("Success!"), ST7735_GREEN, ST7735_BLACK, 1);
+  TFT.drawString(80, 70, (unsigned char*)("Success!"), ST7735_GREEN, ST7735_BLACK, 1);
   cancel_blinking();
   start_blinking(0.5, "green");
 
@@ -154,8 +156,8 @@ int main(void){
 
   // if something happens in socket (packets in or out), the callback is called.
   printf("Pair controllers when ready, and then press start.\n");
-  TFT.drawString(0, 50, (unsigned char*)("Pair controllers when"), ST7735_WHITE, ST7735_BLACK, 1);
-  TFT.drawString(0, 60, (unsigned char*)("ready, then press start."), ST7735_WHITE, ST7735_BLACK, 1);
+  TFT.drawString(0, 80, (unsigned char*)("Pair controllers when"), ST7735_WHITE, ST7735_BLACK, 1);
+  TFT.drawString(0, 90, (unsigned char*)("ready, then press start."), ST7735_WHITE, ST7735_BLACK, 1);
   MySocket->sigio(callback(socket_isr));
 
   // dispatch forever
@@ -278,14 +280,14 @@ void pairSlaves() {
       // Slave1
       if(Slave1_Addr.get_ip_address() == NULL  && source_addr != Slave2_Addr){
         printf("Slave1 assigned\n");
-        TFT.drawString(0, 80, (unsigned char*)("--Player 1 paired"), ST7735_WHITE, ST7735_BLACK, 1);
+        TFT.drawString(0, 110, (unsigned char*)("--Player 1 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave1_Addr = source_addr;
 
       // Slave2
       }
       else if(Slave2_Addr.get_ip_address() == NULL  && source_addr != Slave1_Addr){
         printf("Slave2 assigned\n");
-        TFT.drawString(0, 90, (unsigned char*)("--Player 2 paired"), ST7735_WHITE, ST7735_BLACK, 1);
+        TFT.drawString(0, 120, (unsigned char*)("--Player 2 paired"), ST7735_WHITE, ST7735_BLACK, 1);
         Slave2_Addr = source_addr;
       }
 
