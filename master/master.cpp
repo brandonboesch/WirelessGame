@@ -117,8 +117,11 @@ int main(void){
   // setup the display
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   TFT.setRotation(3);
+  TFT.bitmap(0, 128, ARMmbed, 160, 128);
+  wait(2);
+  TFT.bitmap(0, 128, presents, 160, 128);
+  wait(2);
   TFT.fillScreen(ST7735_BLACK);
-  TFT.bitmap(0, 128, test, 160, 128); // TODO remove after debug
   TFT.drawString(30, 10, (unsigned char*)("PADDLE"), ST7735_YELLOW, ST7735_BLACK, 3);
     
   // connect to mesh and get IP address
