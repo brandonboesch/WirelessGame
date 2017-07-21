@@ -16,11 +16,11 @@
 //   RESET   - connected to +3.3 V
 //   VCC     - connected to +3.3 V
 //   Gnd     - connected to ground
-
+//
 // Coordinates when rotation=3:
 //   Top left     = (0, 0)
 //   Bottom right = (159, 127)
-
+//
 // ******************************************************************
 
 #include "mbed.h"
@@ -39,15 +39,15 @@
 #define TRACE_GROUP "masterComms"
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
-#define IP_LAST4_OFFSET 35
-#define MAX_SCORE 9
+#define IP_LAST4_OFFSET 35       // offset into ip address sting, so that only last 4 characters print
+#define MAX_SCORE 9              // max score before user wins game
 #define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
 #define SCREEN_LEN_LONG_HALF SCREEN_LEN_LONG/2
 #define ANGLE_DIV 0.0291         // PI / (SCREEN_LEN_SHORT-PADDLE_SIZE) = 0.0291 when paddle = 20
 #define ANGLE_MULT 0.1428        // Multiplier used to calculate paddle bounce. (PI/2) / (PADDLE_SIZE/2) = 0.1428
-#define PADDLE_SIZE 20     // actuall size is +1 of defined, due to drawline()). Update ANGLE_DIV if changes. 
+#define PADDLE_SIZE 20           // actuall size is +1 of defined, due to drawline()). Update ANGLE_DIV if changes. 
 #define SCREEN_MINUS_PADDLE (SCREEN_LEN_SHORT-PADDLE_SIZE)
 #define BARRIER_RIGHT (SCREEN_LEN_LONG-14)  // boundary on the right side of screen
 #define BARRIER_LEFT 13                     // boundary on the left side of screen
@@ -115,7 +115,7 @@ int main(void){
   
   // setup the display
   TFT.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
-  TFT.setRotation(3);
+  TFT.setRotation(3);          // rotate screen
 
   // draw titlescreens
   TFT.bitmap(0, 128, armMBED, 160, 128);
@@ -128,14 +128,14 @@ int main(void){
   // connect to mesh and get IP address
   printf("\n\nConnecting...\n");
   TFT.drawString(0, 70, (unsigned char*)("Connecting..."), ST7735_WHITE, ST7735_BLACK, 1);
-  mesh.initialize(&rf_phy);
+  mesh.initialize(&rf_phy);                     // initialize mesh using phy
   int error=-1;
   if((error=mesh.connect())){
-    printf("Connection failed! %d\n", error);
+    printf("Connection failed! %d\n", error);   // if fails, check header pins for proper connection
     TFT.drawString(80, 70, (unsigned char*)("Failed!"), ST7735_RED, ST7735_BLACK, 1);
     return error;
   }
-  while(NULL == mesh.get_ip_address()){
+  while(NULL == mesh.get_ip_address()){         // check trying until ip address is aquired
     Thread::wait(500);
   }
   printf("connected. IP = %s\n", mesh.get_ip_address());
@@ -143,7 +143,7 @@ int main(void){
   cancel_blinking();
   start_blinking(0.5, "green");
 
-  // initialize the network socket
+  // initialize the network UDP socket
   stoip6(MULTICAST_ADDR_STR, strlen(MULTICAST_ADDR_STR), MultiCastAddr);
   MySocket = new UDPSocket(&mesh);
   MySocket->set_blocking(false);
@@ -246,13 +246,14 @@ void receiveMessage() {
       }
     }
 
+    // error checking
     else if(length!=NSAPI_ERROR_WOULD_BLOCK){
       tr_error("Error happened when receiving %d\n", length);
       something_in_socket = false;
     }
+    // if socket is empty
     else{
-      // there was nothing to read.
-      something_in_socket = false;
+      something_in_socket = false;  // there was nothing to read.
     }  
   }
 }
@@ -270,6 +271,7 @@ void pairSlaves() {
   SocketAddress source_addr;
   memset(ReceiveBuffer, 0, sizeof(ReceiveBuffer));
   bool something_in_socket = true;
+
   // continue looping while data exists in buffer
   while(something_in_socket){
     int length = MySocket->recvfrom(&source_addr, ReceiveBuffer, sizeof(ReceiveBuffer)-1);
@@ -410,7 +412,7 @@ void game(void){
   }
 
   // redraw ball in its updated coordinate
-  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);     // draw ball to screen
+  TFT.drawBall(Ball_Coord_Current.x, Ball_Coord_Current.y, ST7735_RED);   // draw ball to screen
   
   // update objects' old values
   Paddle1_Top_Prev = Paddle1_Top_Current;           // update Paddle1's previous pixel
@@ -649,6 +651,4 @@ void socket_isr(){
     Queue1.call(receiveMessage);  
   }
 }
-
-
 
