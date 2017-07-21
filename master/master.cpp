@@ -118,7 +118,7 @@ int main(void){
   TFT.setRotation(3);
 
   // draw titlescreens
-  TFT.bitmap(0, 128, ARMmbed, 160, 128);
+  TFT.bitmap(0, 128, armMBED, 160, 128);
   wait(2);
   TFT.bitmap(0, 128, presents, 160, 128);
   wait(2);
