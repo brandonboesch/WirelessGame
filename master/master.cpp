@@ -40,7 +40,7 @@
 #define MULTICAST_ADDR_STR "ff03::1"
 #define UDP_PORT 1234
 #define IP_LAST4_OFFSET 35       // offset into ip address sting, so that only last 4 characters print
-#define MAX_SCORE 9              // max score before user wins game
+#define MAX_SCORE 3              // max score before user wins game
 #define GAME_CALL_RATE 10        // the higher the value, the slower the system adds game() to the event queue
 #define SCREEN_LEN_SHORT 128     // number of pixels on short dimension of screen
 #define SCREEN_LEN_LONG 160      // number of pixels on long dimension of screen
