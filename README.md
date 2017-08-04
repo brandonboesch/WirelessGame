@@ -79,9 +79,20 @@ After the screen is fully connected to the board, the last step for the master d
 The only hardware needed for the slave devices are two FRDM-K64F microcontrollers and two 6LowPAN Shields. Simply attach the 6LoWPAN shields to the headers of the FRDM-K64F. The 6LoWPAN shields have Arduino R3 headers, and should connect easily to the FRDM-K64F.
 
 ## Battery power hardware (optional step)
-I recommend powering the devices via batteries so that they are untethered during play. This makes playing the ping-pong game a more authentic experience. Below is an image of how I connected the PowerBoost 500 charger and LiPo battery to the FRDM-K64F devices. I simply placed the LiPo battery flat against the FRDM-K64F's backside, put the PowerBoost 500 charger on top of that, and then zip tied them together. The PowerBoost 500 chargers are awesome, as they can charge your LiPos and also provide the required steady +5V that the FRDM-K64F required. Feel free to get creative here!  
+I recommend powering the devices via batteries so that they are untethered during play. This makes playing the ping-pong game a more authentic experience. Below is an image of how I connected the PowerBoost 500 charger and LiPo battery to the FRDM-K64F devices. I simply placed the LiPo battery flat against the FRDM-K64F's backside, put the PowerBoost 500 charger on top of that, and then zip tied them together. The PowerBoost 500 chargers are awesome, as they can charge your LiPos and provide a steady +5V for the FRDM-K64F. Feel free to get creative here!  
 
 <img src="images/power.png" width="600">
 
 ## Software setup
 Clone the repository onto your computer. Make sure mbed CLI is installed with the requirements as shown in this [video](https://www.youtube.com/watch?v=PI1Kq9RSN_Y&t=2s).
+
+The directory tree of this repo, along with a description of each of the different directories is below:
+* display - Sample code, drivers, and libraries for the ST7735 display.
+* images - Images that are used within this README.
+* master - Code that gets flashed to the master device.
+* motion - Sample code, drivers, and libraries for the accelerometer.
+* slave - Code that gets flased to the slave devices.
+
+You will need to compile the code for both the master and slave devices.  To compile code for both of these device, run the compiling bash script from the root of this directory by using the command `./make.sh`
+
+TODO: make a bash script that compiles both the master and slave.
