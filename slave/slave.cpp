@@ -84,8 +84,7 @@ int main(void){
   device.init();                       
  
   // configure button interrupt
- 	MyButton.fall(&myButton_isr);
-
+  MyButton.fall(&myButton_isr);
 
   //if something happens in socket (packets in or out), the call-back is called.
   MySocket->sigio(callback(socket_isr));
@@ -176,9 +175,6 @@ void receiveMessage() {
 void trace_printer(const char* str){
   printf("%s\n", str);
 }
-
-
-// ***************************************************************
 
 
 // ****************** ISR HANDLERS *******************************
