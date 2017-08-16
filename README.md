@@ -9,16 +9,16 @@ To see the project in action, check out the accompanying video [here](TODO: inse
 
 In this project, there are three different microcontrollers, consisting of a master and two slaves. The master is responsible for bringing up the mesh network, assigning IP addresses to its slaves, and updating the game screen. The slave devices are issued out to game players, and are used like ping-pong paddles.
 
-When a player raises and lowers their paddles, the slave device's accelerometer data is transmitted to the master, and the master will update the player's paddle location on the screen based on that data. The players try to get as many points as possible by sending the ping-pong ball into the other player's goal. Once the max score is reached, a winner is determined and the game ends.
+When a player raises and lowers their paddle, the slave device's accelerometer data is transmitted to the master, and the master will update the player's paddle location on the screen based on that data. The players try to get as many points as possible by sending the ping-pong ball into the other player's goal. Once the max score is reached, a winner is determined and the game ends.
 
 <img src="images/screenshot.png" width="500">
 
-The devices in this project communicate with each other using a newer 2.4GHz wireless protocol named [Thread](http://threadgroup.org/What-is-Thread/Connected-Home), which has recently become an industry standard and is backed by an alliance of big name companies. For more information on Thread, an introduction can found [here](https://docs.mbed.com/docs/arm-ipv66lowpan-stack/en/latest/thread_intro/).
+The devices in this project communicate with each other using a newer 2.4GHz wireless protocol named [Thread](http://threadgroup.org/What-is-Thread/Connected-Home), which has recently become an industry standard and is backed by an alliance of big name companies. The cool thing about this mesh network is that it does not require any external router or Internet connection to communicate between the devices, as it is all self contained. For more information on Thread, an introduction can found [here](https://docs.mbed.com/docs/arm-ipv66lowpan-stack/en/latest/thread_intro/).
 
 ## Requirements
 In order to build this project, you will need the following items:
 * [FRDM-K64F](https://developer.mbed.org/platforms/FRDM-K64F/) (x3).
-* [6LoWPAN shield](TODO: update with components page link when available) (x3).
+* [6LoWPAN shield](https://firefly-iot.com/product/l-tek-arduino-shield-2-4ghz/) (x3).
 * [ST7735 LCD display](https://www.adafruit.com/product/358).
 * [Male header pins](https://www.adafruit.com/product/392).
 * [Female/Female jumper wires](https://www.adafruit.com/product/1950).
@@ -31,7 +31,7 @@ Optional items to make the devices battery powered:
 * [6in USB cable](https://www.adafruit.com/product/898) (x3).
 
 ## Master device hardware
-This section explains all the hardware, modifications, and connections needed to build the master device. First, I will explain how to solder the necessary headers to the board. Next, I will show you how to connect the screen to the device with a ribbon cable of wires. Finally, I will instruct you on attaching the 6LoWPAN shield used for mesh networking.
+This section explains all the hardware, modifications, and connections needed to build the master device. First, I will explain how to solder the necessary headers to the board. After that, I will show you how to connect the screen to the device with a ribbon cable of wires. Finally, I will instruct you on attaching the 6LoWPAN shield used for mesh networking.
 
 ### Soldering an additional header to the master device
 The master device requires use of two different SPI module blocks found on the FRDM-K64F. The first SPI block is consumed by the 6LowPAN shield. The second SPI block is used by the ST7735 LCD screen. The second SPI block is not initially pined out on any header of the FRDM-K64F, therefore, an additional header needs to be soldered to the board. The location of where the header needs to be soldered is shown in the image below.
@@ -76,7 +76,7 @@ After the screen is fully connected to the board, the last step for the master d
 ## Slave device hardware
 The only hardware needed for the slave devices are two FRDM-K64F microcontrollers and two 6LowPAN Shields. Simply attach the 6LoWPAN shields to the headers of the FRDM-K64F. The 6LoWPAN shields have Arduino R3 headers, and should connect easily to the FRDM-K64F.
 
-## Battery power hardware (optional step)
+## Battery powered hardware (optional step)
 I recommend powering the devices via batteries so that they are untethered during play. This makes playing the ping-pong game a more authentic experience. Below is an image showing how I connected the PowerBoost 500 charger and LiPo battery to the FRDM-K64F devices. First I zip tied the LiPo battery and PowerBoost 500 together with a single zip tie. I then zip tied that bundle to the bottom of the FRDM-K64F. These PowerBoost 500 chargers are awesome, as they can charge your LiPos and provide a steady +5V for the FRDM-K64F. If you are feeling adventurous, it is possible to solder wires directly to the board, so that you do not need any USB cables. Feel free to get creative here!  
 
 <img src="images/power.png" width="400">
@@ -113,7 +113,7 @@ When all the devices LEDs are blinking green, the mesh network is fully configur
 
 After Player1 presses the user button, the screen on the master device should update saying that Player1 has been paired. Player2 should then press their user button as well. Once both players have their paddles paired, the game is ready to begin.  Any player can now press the user button found on the master device to start the game.
 
-When the game starts, Player1's paddle will be on the left side of the screen, and Player2's paddle will be on the right. Players can control the paddles on the screen my moving their slave devices up and down in an arc, as seen in the image below. Internally, the slave devices are capturing thier x,y, and z coordinates using their accelerometer. After capturing enough measurements, the values are averaged and then broadcasting over the mesh network.  The master device will receive that broadcast, determines who sent the message, translates the x,y,z data into an angle, and then updates that player's paddle on the screen based off that angle. If the device is at 180 degrees, the game will draw the paddle at the very top of the screen, and if at 0 degress the paddle will be on the bottom.
+When the game starts, Player1's paddle will be on the left side of the screen, and Player2's paddle will be on the right. Players can control the paddles on the screen my moving their slave devices up and down in an arc, as seen in the image below. Internally, the slave devices are capturing thier x,y, and z coordinates using their accelerometers. After capturing enough measurements, the values are averaged and then broadcasting over the mesh network.  The master device will receive that broadcast, determines who sent the message, translates the x,y,z data into an angle, and then updates that player's paddle on the screen based off that angle. If the device is at 180 degrees, the game will draw the paddle at the very top of the screen, and if at 0 degress the paddle will be on the bottom.
 
 <img src="images/arc.png" width="300">
 
