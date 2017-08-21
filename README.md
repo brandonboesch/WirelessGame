@@ -1,8 +1,8 @@
 # Developer's Guide for a Wireless Game
 
-The goal of this project was to create something fun and interesting which utilizes a variety of different hardware sensors and components. Along with that, I wanted to give readers example code which utilizes current technologies like mesh networks, microcontroller displays, and accelerometers, with intention that you yourself can go off and do amazing things with the technology. In this project, I put a twist on a classic arcade game utilizing Arm Mbed [devices](https://developer.mbed.org/platforms/) and [components](https://developer.mbed.org/components/). I also included some stripped down sample code for the drivers and libraries, to assist you in getting the hardware working in any other projects you may have.
+The goal of this project was to create something fun and interesting which utilizes a variety of different hardware sensors and components. Along with that, I wanted to give readers example code which utilizes current technologies like mesh networks, displays for embedded systems, and accelerometers, with intention that you yourself can go off and do amazing things with the technology. In this project, I put a twist on a classic arcade game utilizing Arm Mbed [devices](https://developer.mbed.org/platforms/) and [components](https://developer.mbed.org/components/). I also included some stripped down sample code for the drivers and libraries, to assist you in getting the hardware working in any other projects you may have.
 
-To see the project in action, check out the accompanying video [here](TODO: insert youtube link).
+To see the project in action, check out the accompanying [YouTube video](https://youtu.be/7zFVvVnX9fw). Other cool projects can be found on Arm Mbed's [facebook page](https://www.facebook.com/ArmMbed/) as well, check them out.
 
 ## Project overview
 <img src="images/devices.png" width="500">
